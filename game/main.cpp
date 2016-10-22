@@ -64,9 +64,9 @@ struct Vertex
 };
 
 GLuint vbo;
-//GLuint ibo;
+GLuint ibo;
 GLuint vao;
-//GLint world_location;
+GLint world_location;
 
 void init(void)
 {
@@ -86,20 +86,16 @@ void createShape()
     vertices[0].color = glm::vec3(1.0f, 1.0f, 0.0f);
     vertices[1].color = glm::vec3(1.0f, 0.0f, 0.0f);
     vertices[2].color = glm::vec3(0.0f, 1.0f, 0.0f);
-    //vertices[3].color = glm::vec3(0.0f, 0.0f, 1.0f);
 
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    unsigned int indices[] = { 0, 3, 1,
-                               1, 3, 2,
-                               2, 3, 0,
-                               0, 1, 2 };
+    unsigned int indices[] = { 0, 1, 2 };
 
-    //glGenBuffers(1, &ibo);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glGenBuffers(1, &ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -119,17 +115,16 @@ void render(void)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) sizeof(glm::vec3));
 
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
-    //glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), scale, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), scale, glm::vec3(0.0f, 1.0f, 0.0f));
     //glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
     //glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 1.0f, 100.0f);
     //glm::mat4 view = glm::mat4(1.0f);//glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    //glm::mat4 mvp = glm::mat4(1.0f);
-    //glUniformMatrix4fv(world_location, 1, GL_TRUE, &mvp[0][0]);
+    glm::mat4 mvp = rotate;
+    glUniformMatrix4fv(world_location, 1, GL_TRUE, &mvp[0][0]);
 
-    //glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
@@ -178,8 +173,8 @@ void compileShaders(char const * vert_file, char const * frag_file)
 
     glUseProgram(shader_program);
 
-    //world_location = glGetUniformLocation(shader_program, "transform");
-    //assert(world_location != 0xFFFFFFFF);
+    world_location = glGetUniformLocation(shader_program, "transform");
+    assert(world_location != 0xFFFFFFFF);
 }
 
 void addShader(GLuint shader_program, std::string const & shader_text, GLenum shader_type)
