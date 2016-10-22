@@ -1,3 +1,3 @@
 default:
-	g++ server.c -o server
-	g++ client.c -o client
+	g++ server.cpp -o server
+	g++ client.cpp -o client
