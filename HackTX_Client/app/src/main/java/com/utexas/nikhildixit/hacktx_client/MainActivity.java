@@ -29,7 +29,6 @@ import android.widget.EditText;
 
 import org.json.JSONObject;
 
-
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     // Network
@@ -40,8 +39,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor mAccel;
 
     // Game
+    private static final float FPS = 60.0f;
+    private static final float TIMESTEP = 1.0f / FPS;
     private float[] last_accel_value;
     private float[] my_paddle_position;
+    private float[] my_paddle_velocity;
+    private float[] my_paddle_acceleration;
 
 
     private static final int SERVER_PORT = 1221;
@@ -54,15 +57,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // Initialize sensor values
         last_accel_value = new float[3];
-        my_paddle_position = new float[2];
-        my_paddle_position[0] = 0.5f;
-        my_paddle_position[1] = 0.5f;
 
         // Setup accelerometer
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccel = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         mSensorManager.registerListener(this, mAccel, SensorManager.SENSOR_DELAY_NORMAL);
 
+        // Setup game data
+        my_paddle_position = new float[2];
+        my_paddle_velocity = new float[3];
+        my_paddle_acceleration = new float[3];
+
+        my_paddle_position[0] = my_paddle_position[1] = 0.5f;
+        my_paddle_velocity[0] = my_paddle_velocity[1] = my_paddle_velocity[2] = 0.0f;
+        my_paddle_acceleration[0] = my_paddle_acceleration[1] = my_paddle_acceleration[2] = 0.0f;
+
+        // Start game thread
         new Thread(new ClientThread()).start();
     }
 
@@ -74,8 +84,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             last_accel_value[2] = event.values[2];
         }
     }
-
-
 
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
@@ -100,12 +108,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void run() {
 
-
             try {
 
-               InetAddress serverAddr = InetAddress.getByName(SERVER_NAME);
-
                 // Setup UDP
+                InetAddress serverAddr = InetAddress.getByName(SERVER_NAME);
                 DatagramSocket client_socket;
 
                 for (;;) {
@@ -127,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     if (my_paddle_position[1] > 1.0f)
                         my_paddle_position[1] = 1.0f;
 
-                    
+
                     // Create JSON object
                     JSONObject data = new JSONObject();
                     try {
@@ -139,17 +145,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                     try {
 
+                        // Send paddle info
                         byte[] byte_data = data.toString().getBytes(StandardCharsets.US_ASCII);
                         DatagramPacket send_packet = new DatagramPacket(byte_data, data.toString().length(), serverAddr, SERVER_PORT);
-                        System.out.println(data.toString());
-                        //System.out.println(send_packet);
                         client_socket = new DatagramSocket();
-                        //System.out.println(client_socket);
                         client_socket.send(send_packet);
+
+                        // Wait for response (NOT NEEDED IN PRODUCTION)
+                        //byte[] response = new byte[1024];
+                        //DatagramPacket resp_packet = new DatagramPacket(response, response.length, serverAddr, SERVER_PORT);
+                        //client_socket.receive(resp_packet);
+
                     } catch (Exception e) {
                         System.out.println(e.toString());
                     }
-                    SystemClock.sleep(10);
+                    SystemClock.sleep(1000000);
                 }
 
             } catch (UnknownHostException e1) {
