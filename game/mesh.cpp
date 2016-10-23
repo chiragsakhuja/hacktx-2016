@@ -29,7 +29,7 @@ void Mesh::calculateNormals(Vertex * vertices, GLuint * indices)
 
         glm::vec3 v1 = vertices[i1].position - vertices[i0].position;
         glm::vec3 v2 = vertices[i2].position - vertices[i0].position;
-        glm::vec3 normal = glm::normalize(glm::cross(v1, v2));
+        glm::vec3 normal = glm::normalize(glm::cross(v2, v1));
 
         vertices[i0].normal = vertices[i0].normal + normal;
         vertices[i1].normal = vertices[i1].normal + normal;
@@ -69,30 +69,30 @@ int Mesh::createBuffers(Vertex * vertices, GLuint * indices)
     return 0;
 }
 
-int Mesh::createPlane(void)
+int Mesh::createBox(glm::vec3 const & bfl, glm::vec3 const & trb)
 {
     Vertex vertices[8];
-    vertices[0] = Vertex{ glm::vec3(-0.5f, -0.5f,  0.05f), glm::vec3(1.0f, 1.0f, 0.0f) };
-    vertices[1] = Vertex{ glm::vec3( 0.5f, -0.5f,  0.05f), glm::vec3(1.0f, 0.0f, 0.0f) };
-    vertices[2] = Vertex{ glm::vec3( 0.5f,  0.5f,  0.05f), glm::vec3(0.0f, 0.0f, 1.0f) };
-    vertices[3] = Vertex{ glm::vec3(-0.5f,  0.5f,  0.05f), glm::vec3(0.0f, 1.0f, 1.0f) };
-    vertices[4] = Vertex{ glm::vec3(-0.5f, -0.5f, -0.05f), glm::vec3(0.0f, 1.0f, 0.0f) };
-    vertices[5] = Vertex{ glm::vec3( 0.5f, -0.5f, -0.05f), glm::vec3(1.0f, 0.0f, 1.0f) };
-    vertices[6] = Vertex{ glm::vec3( 0.5f,  0.5f, -0.05f), glm::vec3(1.0f, 1.0f, 1.0f) };
-    vertices[7] = Vertex{ glm::vec3(-0.5f,  0.5f, -0.05f), glm::vec3(0.0f, 1.0f, 1.0f) };
-
-    GLuint indices[] = { 0, 1, 2,
-                         2, 3, 0,
-                         4, 5, 6,
-                         6, 7, 4,
-                         0, 4, 1,
-                         4, 1, 5,
-                         1, 5, 6,
-                         6, 2, 1,
-                         0, 4, 7,
-                         7, 3, 0,
-                         3, 2, 6,
-                         6, 7, 3 };
+    vertices[0] = Vertex{ glm::vec3(bfl.x, bfl.y, bfl.z), glm::vec3(1.0f, 1.0f, 0.0f) };
+    vertices[1] = Vertex{ glm::vec3(trb.x, bfl.y, bfl.z), glm::vec3(1.0f, 0.0f, 0.0f) };
+    vertices[2] = Vertex{ glm::vec3(trb.x, trb.y, bfl.z), glm::vec3(0.0f, 0.0f, 1.0f) };
+    vertices[3] = Vertex{ glm::vec3(bfl.x, trb.y, bfl.z), glm::vec3(0.0f, 1.0f, 1.0f) };
+    vertices[4] = Vertex{ glm::vec3(bfl.x, bfl.y, trb.z), glm::vec3(0.0f, 1.0f, 0.0f) };
+    vertices[5] = Vertex{ glm::vec3(trb.x, bfl.y, trb.z), glm::vec3(1.0f, 0.0f, 1.0f) };
+    vertices[6] = Vertex{ glm::vec3(trb.x, trb.y, trb.z), glm::vec3(1.0f, 1.0f, 1.0f) };
+    vertices[7] = Vertex{ glm::vec3(bfl.x, trb.y, trb.z), glm::vec3(0.0f, 1.0f, 1.0f) };
+ 
+    GLuint indices[] = { 2, 1, 0,  
+                         0, 3, 2,  
+                         7, 4, 5,  
+                         5, 6, 7,  
+                         1, 5, 4,  
+                         4, 0, 1,  
+                         6, 2, 3,  
+                         3, 7, 6,  
+                         6, 5, 1,  
+                         1, 2, 6,  
+                         3, 0, 4,  
+                         4, 7, 3  };
 
     numVertices = sizeof(vertices) / sizeof(Vertex);
     numIndices = sizeof(indices) / sizeof(GLuint);
@@ -155,7 +155,7 @@ int Mesh::createSphere(float radius, float dT, float dP)
     }
 
     for(int i = 0; i < numVertices; i += 1) {
-        vertices[i].color = glm::vec3(1.0f, 0.0f, 0.0f);
+        vertices[i].color = glm::vec3(1.0f);
     }
 
     // Indexing time //

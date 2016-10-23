@@ -9,10 +9,12 @@ uniform mat4 world_trans;
 
 out vec3 vert_color;
 out vec3 vert_normal;
+out vec3 vert_world_pos;
 
 void main()
 {
-    vert_normal = (world_trans * vec4(normal, 0.0)).xyz;
     vert_color = color;
+    vert_normal = (world_trans * vec4(normal, 0.0)).xyz;
+    vert_world_pos = (world_trans * vec4(position, 1.0)).xyz;
     gl_Position = wvp_trans * vec4(position, 1.0);
 }

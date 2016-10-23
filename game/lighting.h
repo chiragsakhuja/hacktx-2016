@@ -20,4 +20,17 @@ public:
     DirectionalLight(void);
 };
 
+class PointLight : public BaseLight
+{
+public:
+    glm::vec3 position;
+
+    struct
+    {
+        float constant, linear, exp;
+    } atten;
+
+    PointLight(void);
+};
+
 #endif

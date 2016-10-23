@@ -36,8 +36,9 @@ class Game
 {
 private:
     Shader * main_shader;
-    Mesh * paddle, * ball, * line_x, * line_y, * line_z;
+    Mesh * paddle, * ball, * left_wall, * bottom_wall;
     DirectionalLight * directional_light;
+    PointLight * point_light;
 
     int initGL(void);
     int initShaders(void);
@@ -48,7 +49,7 @@ private:
     glm::vec3 paddle_pos[PADDLE_COUNT] = {glm::vec3(0.0f, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, PADDLE2_Z)};
     glm::vec2 paddle_move[PADDLE_COUNT];
     glm::vec3 ball_pos = glm::vec3(0.0f, 0.0f, (PADDLE1_Z + PADDLE2_Z) / 2.0f);
-    float ball_direction;
+    glm::vec3 ball_direction;
     int primes[PADDLE_COUNT] = {41, 43};
 
 public:
@@ -56,6 +57,7 @@ public:
     ~Game(void);
 
     int init(void);
+    int sendOneTimeUniforms(void);
     int render(int frame);
     int input(int frame);
 };
@@ -67,12 +69,12 @@ Game::Game()
     main_shader = new Shader();
     paddle = new Mesh();
     ball = new Mesh();
-    line_x = new Mesh();
-    line_y = new Mesh();
-    line_z = new Mesh();
+    left_wall = new Mesh();
+    bottom_wall = new Mesh();
     directional_light = new DirectionalLight();
+    point_light = new PointLight();
 
-    ball_direction = -0.05f;
+    ball_direction = glm::vec3(0.067f, -0.029f, -0.043f);
 
     for(int i = 0; i < PADDLE_COUNT; i += 1) {
         paddle_move[i]  = glm::vec2(0.0f);
@@ -85,7 +87,8 @@ Game::~Game(void)
     safe_delete_array(main_shader);
     safe_delete_array(paddle);
     safe_delete_array(ball);
-    safe_delete_array(line_z);
+    safe_delete_array(left_wall);
+    safe_delete_array(bottom_wall);
     safe_delete_array(directional_light);
 }
 
@@ -122,10 +125,18 @@ int Game::initShaders(void)
     main_shader->compileShader();
     main_shader->addUniform("world_trans");
     main_shader->addUniform("wvp_trans");
-    main_shader->addUniform("directional_light.color");
-    main_shader->addUniform("directional_light.ambient_intensity");
+    main_shader->addUniform("directional_light.base.color");
+    main_shader->addUniform("directional_light.base.ambient_intensity");
+    main_shader->addUniform("directional_light.base.diffuse_intensity");
     main_shader->addUniform("directional_light.direction");
-    main_shader->addUniform("directional_light.diffuse_intensity");
+    main_shader->addUniform("point_light.base.color");
+    main_shader->addUniform("point_light.base.ambient_intensity");
+    main_shader->addUniform("point_light.base.diffuse_intensity");
+    main_shader->addUniform("point_light.position");
+    main_shader->addUniform("point_light.atten.constant");
+    main_shader->addUniform("point_light.atten.linear");
+    main_shader->addUniform("point_light.atten.exp");
+    main_shader->addUniform("disable_lighting");
     main_shader->bind();
 
     return 0;
@@ -133,21 +144,28 @@ int Game::initShaders(void)
 
 int Game::initWorld(void)
 {
-    paddle->createPlane();
-    ball->createSphere(0.25f, 10.0f, 10.0f);
-    line_x->createLine(glm::vec3(LEFT, 0.0f, 0.0f), glm::vec3(RIGHT, 0.0f, 0.0f));
-    line_y->createLine(glm::vec3(0.0f, DOWN, 0.0f), glm::vec3(0.0f, UP, 0.0f));
-    line_z->createLine(glm::vec3(0.0f, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, PADDLE2_Z));
+    paddle->createBox(glm::vec3(-0.5, -0.5, 0.05f), glm::vec3(0.5, 0.5f, -0.05f));
+    ball->createSphere(0.025f, 10.0f, 10.0f);
+    left_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z));
+    bottom_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z));
 
     return 0;
 }
 
 int Game::initLights(void)
 {
-    directional_light->color = glm::vec3(1.0f, 1.0f, 1.0f);
-    directional_light->ambient_intensity = 1.0f;
+    directional_light->color = glm::vec3(1.0f);
+    directional_light->ambient_intensity = 0.0f;
     directional_light->diffuse_intensity = 0.0f;
-    directional_light->direction = glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f));
+    directional_light->direction = glm::vec3(0.0f, 1.0f, -1.0f);
+
+    point_light->color = glm::vec3(1.0f);
+    point_light->ambient_intensity = 0.5f;
+    point_light->diffuse_intensity = 1.0f;
+    point_light->position = ball_pos;
+    point_light->atten.constant = 0.5f;
+    point_light->atten.linear = 0.5f;
+    point_light->atten.exp = 0.1f;
 
     return 0;
 }
@@ -164,13 +182,16 @@ int Game::input(int frame)
         }
     }
 
-    if(ball_pos.z > PADDLE1_Z) {
-        ball_direction = -0.5f;
+    if(ball_pos.z > PADDLE1_Z || ball_pos.z < PADDLE2_Z) {
+        ball_direction = glm::vec3(ball_direction.x, ball_direction.y, -ball_direction.z);
     }
-    if(ball_pos.z < PADDLE2_Z) {
-        ball_direction = 0.5f;
+    if(ball_pos.x < LEFT || ball_pos.x > RIGHT) {
+        ball_direction = glm::vec3(-ball_direction.x, ball_direction.y, ball_direction.z);
     }
-    ball_pos.z += ball_direction;
+    if(ball_pos.y < DOWN || ball_pos.y > UP) {
+        ball_direction = glm::vec3(ball_direction.x, -ball_direction.y, ball_direction.z);
+    }
+    ball_pos += ball_direction;
 
     return 0;
 }
@@ -187,55 +208,91 @@ void Game::drawLineBatch(Mesh * line, glm::vec3 const & offset, glm::vec3 const 
     }
 }
 
+int Game::sendOneTimeUniforms(void)
+{
+    glUniform1f(main_shader->uniforms["directional_light.base.ambient_intensity"], directional_light->ambient_intensity);
+    glUniform1f(main_shader->uniforms["directional_light.base.diffuse_intensity"], directional_light->diffuse_intensity);
+    glUniform3f(main_shader->uniforms["directional_light.base.color"], directional_light->color.x, directional_light->color.y, directional_light->color.z);
+    glUniform3f(main_shader->uniforms["directional_light.direction"], directional_light->direction.x, directional_light->direction.y, directional_light->direction.z);
+
+    glUniform3f(main_shader->uniforms["point_light.base.color"], point_light->color.x, point_light->color.y, point_light->color.z);
+    glUniform1f(main_shader->uniforms["point_light.base.ambient_intensity"], point_light->ambient_intensity);
+    glUniform1f(main_shader->uniforms["point_light.base.diffuse_intensity"], point_light->diffuse_intensity);
+
+    glUniform1f(main_shader->uniforms["point_light.atten.constant"], point_light->atten.constant);
+    glUniform1f(main_shader->uniforms["point_light.atten.linear"], point_light->atten.linear);
+    glUniform1f(main_shader->uniforms["point_light.atten.exp"], point_light->atten.exp);
+
+    return 0;
+}
+
 int Game::render(int frame)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    paddle->bind();
+    glUniform1i(main_shader->uniforms["disable_lighting"], false);
+    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
     glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 scale = glm::mat4(1.0f);
+    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f));
     glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 world, wvp;
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
 
-    //directional_light->direction = glm::normalize(glm::vec3(cosf(angle), 0.0f, 0.0f));
-    glUniform1f(main_shader->uniforms["directional_light.ambient_intensity"], directional_light->ambient_intensity);
-    glUniform3f(main_shader->uniforms["directional_light.color"], directional_light->color.x, directional_light->color.y, directional_light->color.z);
-    glUniform1f(main_shader->uniforms["directional_light.diffuse_intensity"], directional_light->diffuse_intensity);
-    glUniform3f(main_shader->uniforms["directional_light.direction"], directional_light->direction.x, directional_light->direction.y, directional_light->direction.z);
+    point_light->position = ball_pos;
+    glUniform3f(main_shader->uniforms["point_light.position"], point_light->position.x, point_light->position.y, point_light->position.z);
 
+    paddle->bind();
     for(int i = 0; i < PADDLE_COUNT; i += 1) {
-        glm::mat4 translate = glm::translate(glm::mat4(1.0f), paddle_pos[i]);
-        glm::mat4 world =  translate * rotate * scale;
-        glm::mat4 wvp = perspective * view * world;
+        translate = glm::translate(glm::mat4(1.0f), paddle_pos[i]);
+        world = translate * rotate * scale;
+        wvp = perspective * view * world;
 
         glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
         glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
 
-        ball->draw(GL_TRIANGLES);
+        // TODO: REMOVE
+        if(i >= 1)
+        paddle->draw(GL_TRIANGLES);
     }
 
+    left_wall->bind();
+    translate = glm::mat4(1.0f);
+    world = translate * rotate * scale;
+    wvp = perspective * view * world;
+    glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+    glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+    left_wall->draw(GL_TRIANGLES);
+
+    translate = glm::translate(glm::mat4(1.0f), glm::vec3(RIGHT - LEFT - 0.05f, 0.0f, 0.0f));
+    world = translate * rotate * scale;
+    wvp = perspective * view * world;
+    glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+    glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+    left_wall->draw(GL_TRIANGLES);
+
+    bottom_wall->bind();
+    translate = glm::mat4(1.0f);
+    world = translate * rotate * scale;
+    wvp = perspective * view * world;
+    glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+    glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+    bottom_wall->draw(GL_TRIANGLES);
+
+    translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, UP - DOWN - 0.05f, 0.0f));
+    world = translate * rotate * scale;
+    wvp = perspective * view * world;
+    glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+    glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+    bottom_wall->draw(GL_TRIANGLES);
+
+    glUniform1i(main_shader->uniforms["disable_lighting"], true);
     ball->bind();
-    glm::mat4 translate = glm::translate(glm::mat4(1.0f), ball_pos);
-    glm::mat4 world =  translate * rotate * scale;
-    glm::mat4 wvp = perspective * view * world;
+    translate = glm::translate(glm::mat4(1.0f), ball_pos);
+    world =  translate * rotate * scale;
+    wvp = perspective * view * world;
     glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
     glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
     ball->draw(GL_TRIANGLES);
-
-    line_x->bind();
-    float inc = std::abs(PADDLE2_Z - PADDLE1_Z) / 10;
-    drawLineBatch(line_x, glm::vec3(0.0f, DOWN, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
-    drawLineBatch(line_x, glm::vec3(0.0f, UP, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
-
-    line_y->bind();
-    drawLineBatch(line_y, glm::vec3(LEFT, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
-    drawLineBatch(line_y, glm::vec3(RIGHT, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
-
-    line_z->bind();
-    drawLineBatch(line_z , glm::vec3(LEFT  , DOWN , 0.0f) , glm::vec3(1.0f , 0.0f , 0.0f) , 0.2f , 10 , perspective , view);
-    drawLineBatch(line_z , glm::vec3(LEFT  , UP   , 0.0f) , glm::vec3(1.0f , 0.0f , 0.0f) , 0.2f , 10 , perspective , view);
-    drawLineBatch(line_z , glm::vec3(LEFT  , DOWN , 0.0f) , glm::vec3(0.0f , 1.0f , 0.0f) , 0.2f * ASPECT, 10 , perspective , view);
-    drawLineBatch(line_z , glm::vec3(RIGHT , DOWN , 0.0f) , glm::vec3(0.0f , 1.0f , 0.0f) , 0.2f * ASPECT, 10 , perspective , view);
 
 
     return 0;
@@ -271,6 +328,7 @@ int main(void)
     game.init();
 
     int frame = 0;
+    game.sendOneTimeUniforms();
     while(! glfwWindowShouldClose(window)) {
         game.input(frame);
         game.render(frame);
