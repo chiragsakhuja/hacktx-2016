@@ -19,25 +19,30 @@
 #include "lighting.h"
 
 // Network
+#if 0
 #include "windows.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "json/json.h"
 #include "client.h"
+#endif
+
+#include <stdlib.h>
+#include <stdio.h>
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
+#if 0
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
+#endif
 
 #define BUFLEN 512
 #define WIDTH 1280
 #define HEIGHT 720
 
 #define PADDLE_COUNT 2
-#define PADDLE1_Z -0.2f
+#define PADDLE1_Z -1.0f
 #define PADDLE2_Z -8.0f
 #define LEFT  -1.0f
 #define RIGHT 1.0f
@@ -164,8 +169,8 @@ int Game::initWorld(void)
 {
     paddle->createBox(glm::vec3(-0.5, -0.5, 0.05f), glm::vec3(0.5, 0.5f, -0.05f), true, glm::vec4(0.8f, 0.8f, 0.8f, 0.4f));
     ball->createSphere(0.100f, 10.0f, 10.0f);
-    left_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z), false, glm::vec4(0.0f));
-    bottom_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z), false, glm::vec4(0.0f));
+    left_wall->createBox(glm::vec3(LEFT, DOWN, 0.0f), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z), false, glm::vec4(0.0f));
+    bottom_wall->createBox(glm::vec3(LEFT, DOWN, 0.0f), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z), false, glm::vec4(0.0f));
 
     return 0;
 }
@@ -315,6 +320,7 @@ int Game::render(int frame)
 int main(void)
 {
     // Setup network
+#if 0
     char buf[BUFLEN];
     char message[BUFLEN];
     Client net_client;
@@ -337,6 +343,7 @@ int main(void)
     puts(buf);
 
     Sleep(5000);
+#endif
 
     // GLFW setup
     GLFWwindow * window;
@@ -366,13 +373,16 @@ int main(void)
     Game game;
     game.init();
 
+#if 0
     Json::Reader reader;
+#endif
 
     int frame = 0;
     game.sendOneTimeUniforms();
     while(! glfwWindowShouldClose(window)) {
 
         // Get new paddle location
+#if 0
         char msg[BUFLEN];
         int msg_len = net_client.recieve_message(msg, BUFLEN);
         msg[msg_len] = '\0';
@@ -381,6 +391,7 @@ int main(void)
         bool parsingSuccessful = reader.parse(msg, paddle_data);
         //paddle_x = atof(paddle_data["px"].asString().c_str());
         //paddle_y = atof(paddle_data["py"].asString().c_str());
+#endif
 
         game.input(frame);
         game.render(frame);
