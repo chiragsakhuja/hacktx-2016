@@ -391,7 +391,7 @@ int main(void)
 
         Json::Value paddle_data;
         bool parsingSuccessful = reader.parse(msg, paddle_data);
-        int paddle_id = atof(paddle_data["id"].asString().c_str());
+        int paddle_id = atoi(paddle_data["id"].asString().c_str());
         float paddle_x = atof(paddle_data["px"].asString().c_str());
         float paddle_y = atof(paddle_data["py"].asString().c_str());
         game.paddle_pos[paddle_id].x = paddle_x;
