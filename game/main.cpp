@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <ctime>
 #include <cmath>
 
 #include "GL/gl3w.h"
@@ -16,11 +17,13 @@
 #define WIDTH 1280
 #define HEIGHT 720
 
+#define PADDLE_COUNT 2
+
 class Game
 {
 private:
     Shader * main_shader;
-    Mesh * paddle;
+    Mesh * paddle, * ball, * line;
     DirectionalLight * directional_light;
 
     int initGL(void);
@@ -28,7 +31,10 @@ private:
     int initWorld(void);
     int initLights(void);
 
-    float angle;
+    glm::vec2 paddle_pos[PADDLE_COUNT];
+    glm::vec2 paddle_move[PADDLE_COUNT];
+    int primes[PADDLE_COUNT] = {41, 43};
+    int frame;
 
 public:
     Game(void);
@@ -40,11 +46,20 @@ public:
 
 Game::Game()
 {
+    std::srand(std::time(0));
+
     main_shader = new Shader();
     paddle = new Mesh();
+    ball = new Mesh();
+    line = new Mesh();
     directional_light = new DirectionalLight();
 
-    angle = 0.0f;
+    for(int i = 0; i < PADDLE_COUNT; i += 1) {
+        paddle_pos[i] = glm::vec2(0.0f);
+        paddle_move[i]  = glm::vec2(0.0f);
+    }
+
+    frame = 0;
 }
 
 Game::~Game(void)
@@ -72,6 +87,7 @@ int Game::initGL(void)
 {
     glFrontFace(GL_CW);
     glEnable(GL_DEPTH_TEST);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -84,9 +100,12 @@ int Game::initShaders(void)
     main_shader->addShader(GL_VERTEX_SHADER, "main.vert");
     main_shader->addShader(GL_FRAGMENT_SHADER, "main.frag");
     main_shader->compileShader();
-    main_shader->addUniform("transform");
+    main_shader->addUniform("world_trans");
+    main_shader->addUniform("wvp_trans");
     main_shader->addUniform("directional_light.color");
     main_shader->addUniform("directional_light.ambient_intensity");
+    main_shader->addUniform("directional_light.direction");
+    main_shader->addUniform("directional_light.diffuse_intensity");
     main_shader->bind();
 
     return 0;
@@ -94,7 +113,9 @@ int Game::initShaders(void)
 
 int Game::initWorld(void)
 {
-    paddle->createSphere(1.0f, 10.0f, 10.0f);
+    paddle->createPlane();
+    ball->createSphere(1.0f, 10.0f, 10.0f);
+    line->createPlane();
 
     return 0;
 }
@@ -103,30 +124,49 @@ int Game::initLights(void)
 {
     directional_light->color = glm::vec3(1.0f, 1.0f, 1.0f);
     directional_light->ambient_intensity = 1.0f;
+    directional_light->diffuse_intensity = 0.0f;
+    directional_light->direction = glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f));
 
     return 0;
 }
 
 int Game::render(void)
 {
-    angle += 0.1f;
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     paddle->bind();
 
+    glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 scale = glm::mat4(1.0f);
-    glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
     glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
-    glm::mat4 mvp = perspective * view * translate * rotate * scale;
 
+    //directional_light->direction = glm::normalize(glm::vec3(cosf(angle), 0.0f, 0.0f));
     glUniform1f(main_shader->uniforms["directional_light.ambient_intensity"], directional_light->ambient_intensity);
     glUniform3f(main_shader->uniforms["directional_light.color"], directional_light->color.x, directional_light->color.y, directional_light->color.z);
-    glUniformMatrix4fv(main_shader->uniforms["transform"], 1, GL_FALSE, &mvp[0][0]);
+    glUniform1f(main_shader->uniforms["directional_light.diffuse_intensity"], directional_light->diffuse_intensity);
+    glUniform3f(main_shader->uniforms["directional_light.direction"], directional_light->direction.x, directional_light->direction.y, directional_light->direction.z);
 
-    glDrawElements(GL_TRIANGLES, paddle->numIndices, GL_UNSIGNED_INT, 0);
+    for(int i = 0; i < PADDLE_COUNT; i += 1) {
+        glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(paddle_pos[i].x, paddle_pos[i].y, -(i * 10.0f + 10.0f)));
+        glm::mat4 world =  translate * rotate * scale;
+        glm::mat4 wvp = perspective * view * world;
+
+        glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+        glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+
+        glDrawElements(GL_TRIANGLES, paddle->numIndices, GL_UNSIGNED_INT, 0);
+
+        paddle_pos[i] += paddle_move[i];
+
+        if(frame % primes[i] == 0) {
+            float random1 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+            float random2 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+            paddle_move[i] = glm::normalize(glm::vec2(random1, random2)) / 50.0f;
+        }
+    }
+
+    frame += 1;
 
     return 0;
 }
