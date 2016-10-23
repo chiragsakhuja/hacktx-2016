@@ -4,4 +4,5 @@ pong
 *.o
 *.exe
 *.swp
+*.dll
 sw/

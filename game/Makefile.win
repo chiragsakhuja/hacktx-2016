@@ -1,2 +1,2 @@
 all:
-	g++ -x c++ -std=c++11 main.cpp gl3w.c -opong -lglfw3dll -lopengl32
+	g++ -x c++ -std=c++11 main.cpp gl3w.c shader.cpp -opong -lglfw3dll -lopengl32
