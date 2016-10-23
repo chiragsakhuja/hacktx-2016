@@ -57,7 +57,7 @@ public:
         constexpr float delta = 1.0f/60;
         constexpr float ball_radius = 0.1f;
         constexpr float paddle_size = 0.6f;
-        constexpr float speed_up = 1.05f;
+        constexpr float speed_up = 1.1f;
         constexpr float acc_factor = 0.01f;
         constexpr float aspect_ratio = 720.0f / 1280;
 
@@ -71,25 +71,25 @@ public:
             //ball.vec.y += ball.acc.y * delta;
 
             if ((ball.pos.x + ball_radius) > 1.0f) {
-                ball.pos.x = 1.0f;
+                ball.pos.x = 1.0f - ball_radius;
                 ball.vec.x *= -1;
             } else if ((ball.pos.x - ball_radius) < -1.0f) {
-                ball.pos.x = -1.0f;
+                ball.pos.x = -1.0f + ball_radius;
                 ball.vec.x *= -1;
             }
-            if ((ball.pos.y + ball_radius) > (1.0f * aspect_ratio)) {
-                ball.pos.y = 1.0f;
+            if ((ball.pos.y + ball_radius) > 1.0f) {
+                ball.pos.y = 1.0f - ball_radius;
                 ball.vec.y *= -1;
-            } else if ((ball.pos.y - ball_radius) < (-1.0f * aspect_ratio)) {
-                ball.pos.y = -1.0f;
+            } else if ((ball.pos.y - ball_radius) < -1.0f) {
+                ball.pos.y = -1.0f + ball_radius;
                 ball.vec.y *= -1;
             }
 
-            if ((ball.pos.z - ball_radius)< 0.0f) {
-                if (ball.pos.x > (game.player[0].pos.x - paddle_size / 2.0f) &&
-                    ball.pos.x < (game.player[0].pos.x + paddle_size / 2.0f) &&
-                    ball.pos.y > (game.player[0].pos.y - paddle_size / 2.0f) &&
-                    ball.pos.y < (game.player[0].pos.y + paddle_size / 2.0f)) {
+            if ((ball.pos.z - ball_radius) < 0.0f) {
+                if ((ball.pos.x + ball_radius) > (game.player[0].pos.x - paddle_size / 2.0f) &&
+                    (ball.pos.x - ball_radius) < (game.player[0].pos.x + paddle_size / 2.0f) &&
+                    (ball.pos.y + ball_radius) > (game.player[0].pos.y - paddle_size / 2.0f) &&
+                    (ball.pos.y - ball_radius) < (game.player[0].pos.y + paddle_size / 2.0f)) {
                     ball.vec.x += ((rand() % 20) - 10) * 0.01f;
                     ball.vec.y += ((rand() % 20) - 10) * 0.01f;
                     ball.vec.z *= -speed_up;
@@ -98,14 +98,20 @@ public:
                 } else {
                     game.player[1].score += 1;
                     game.start_player = !game.start_player;
+                    game.ball.pos.x = 0.0f;
+                    game.ball.pos.y = 0.0f;
                     game.ball.pos.z = 5.0f;
+                    game.ball.vec.x = 0.0f;
+                    game.ball.vec.y = 0.0f;
                     game.ball.vec.z = game.start_player ? 2.0f : -2.0f;
                 }
             } else if ((ball.pos.z + ball_radius) > 10.0f) {
-                if (ball.pos.x > (game.player[1].pos.x - paddle_size / 2.0f) &&
-                    ball.pos.x < (game.player[1].pos.x + paddle_size / 2.0f) &&
-                    ball.pos.y > (game.player[1].pos.y - paddle_size / 2.0f) &&
-                    ball.pos.y < (game.player[1].pos.y + paddle_size / 2.0f)) {
+                cout << "ball: (" << ball.pos.x << ", " << ball.pos.y << ")" << endl;
+                cout << "paddle: (" << game.player[1].pos.x << ", " << game.player[1].pos.y << ")" << endl;
+                if ((ball.pos.x + ball_radius) > (game.player[1].pos.x - paddle_size / 2.0f) &&
+                    (ball.pos.x - ball_radius) < (game.player[1].pos.x + paddle_size / 2.0f) &&
+                    (ball.pos.y + ball_radius) > (game.player[1].pos.y - paddle_size / 2.0f) &&
+                    (ball.pos.y - ball_radius) < (game.player[1].pos.y + paddle_size / 2.0f)) {
                     ball.vec.x += ((rand() % 20) - 10) * 0.01f;
                     ball.vec.y += ((rand() % 20) - 10) * 0.01f;
                     ball.vec.z *= -speed_up;
@@ -114,7 +120,11 @@ public:
                 } else {
                     game.player[0].score += 1;
                     game.start_player = !game.start_player;
+                    game.ball.pos.x = 0.0f;
+                    game.ball.pos.y = 0.0f;
                     game.ball.pos.z = 5.0f;
+                    game.ball.vec.x = 0.0f;
+                    game.ball.vec.y = 0.0f;
                     game.ball.vec.z = game.start_player ? 2.0f : -2.0f;
                 }
             }
@@ -243,10 +253,10 @@ int main(int argc, char** argv)
                     string vy = in_data_tree.get<string>("vy");
                     int id = std::atoi(in_data_tree.get<string>("id").c_str());
 
-                    game.player[id].pos.x = std::atoi(px.c_str());
-                    game.player[id].pos.y = std::atoi(py.c_str());
-                    game.player[id].vec.x = std::atoi(vx.c_str());
-                    game.player[id].vec.y = std::atoi(vy.c_str());
+                    game.player[id].pos.x = std::atof(px.c_str());
+                    game.player[id].pos.y = std::atof(py.c_str());
+                    game.player[id].vec.x = std::atof(vx.c_str());
+                    game.player[id].vec.y = std::atof(vy.c_str());
 
                     std::ostringstream out_data_str;
                     ptree out_data_tree;
