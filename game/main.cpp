@@ -18,6 +18,8 @@
 #define HEIGHT 720
 
 #define PADDLE_COUNT 2
+#define PADDLE1_Z -10.0f
+#define PADDLE2_Z -20.0f
 
 class Game
 {
@@ -31,17 +33,19 @@ private:
     int initWorld(void);
     int initLights(void);
 
-    glm::vec2 paddle_pos[PADDLE_COUNT];
+    glm::vec3 paddle_pos[PADDLE_COUNT] = {glm::vec3(0.0f, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, PADDLE2_Z)};
     glm::vec2 paddle_move[PADDLE_COUNT];
+    glm::vec3 ball_pos = glm::vec3(0.0f, 0.0f, (PADDLE1_Z + PADDLE2_Z) / 2.0f);
+    float ball_direction;
     int primes[PADDLE_COUNT] = {41, 43};
-    int frame;
 
 public:
     Game(void);
     ~Game(void);
 
     int init(void);
-    int render(void);
+    int render(int frame);
+    int input(int frame);
 };
 
 Game::Game()
@@ -54,12 +58,11 @@ Game::Game()
     line = new Mesh();
     directional_light = new DirectionalLight();
 
+    ball_direction = -0.05f;
+
     for(int i = 0; i < PADDLE_COUNT; i += 1) {
-        paddle_pos[i] = glm::vec2(0.0f);
         paddle_move[i]  = glm::vec2(0.0f);
     }
-
-    frame = 0;
 }
 
 Game::~Game(void)
@@ -114,7 +117,7 @@ int Game::initShaders(void)
 int Game::initWorld(void)
 {
     paddle->createPlane();
-    ball->createSphere(1.0f, 10.0f, 10.0f);
+    ball->createSphere(0.25f, 10.0f, 10.0f);
     line->createPlane();
 
     return 0;
@@ -130,7 +133,28 @@ int Game::initLights(void)
     return 0;
 }
 
-int Game::render(void)
+int Game::input(int frame)
+{
+    for(int i = 0; i < PADDLE_COUNT; i += 1) {
+        paddle_pos[i] += glm::vec3(paddle_move[i].x, paddle_move[i].y, 0.0f);
+
+        if(frame % primes[i] == 0) {
+            float random1 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+            float random2 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+            paddle_move[i] = glm::normalize(glm::vec2(random1, random2)) / 50.0f;
+        }
+    }
+
+    if(ball_pos.z > PADDLE1_Z) {
+        ball_direction = -0.5f;
+    }
+    if(ball_pos.z < PADDLE2_Z) {
+        ball_direction = 0.5f;
+    }
+    ball_pos.z += ball_direction;
+}
+
+int Game::render(int frame)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -138,7 +162,7 @@ int Game::render(void)
 
     glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 scale = glm::mat4(1.0f);
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
 
     //directional_light->direction = glm::normalize(glm::vec3(cosf(angle), 0.0f, 0.0f));
@@ -148,7 +172,7 @@ int Game::render(void)
     glUniform3f(main_shader->uniforms["directional_light.direction"], directional_light->direction.x, directional_light->direction.y, directional_light->direction.z);
 
     for(int i = 0; i < PADDLE_COUNT; i += 1) {
-        glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(paddle_pos[i].x, paddle_pos[i].y, -(i * 10.0f + 10.0f)));
+        glm::mat4 translate = glm::translate(glm::mat4(1.0f), paddle_pos[i]);
         glm::mat4 world =  translate * rotate * scale;
         glm::mat4 wvp = perspective * view * world;
 
@@ -156,17 +180,15 @@ int Game::render(void)
         glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
 
         glDrawElements(GL_TRIANGLES, paddle->numIndices, GL_UNSIGNED_INT, 0);
-
-        paddle_pos[i] += paddle_move[i];
-
-        if(frame % primes[i] == 0) {
-            float random1 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
-            float random2 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
-            paddle_move[i] = glm::normalize(glm::vec2(random1, random2)) / 50.0f;
-        }
     }
 
-    frame += 1;
+    ball->bind();
+    glm::mat4 translate = glm::translate(glm::mat4(1.0f), ball_pos);
+    glm::mat4 world =  translate * rotate * scale;
+    glm::mat4 wvp = perspective * view * world;
+    glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+    glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+    glDrawElements(GL_TRIANGLES, ball->numIndices, GL_UNSIGNED_INT, 0);
 
     return 0;
 }
@@ -200,11 +222,15 @@ int main(void)
     Game game;
     game.init();
 
+    int frame = 0;
     while(! glfwWindowShouldClose(window)) {
-        game.render();
+        game.input(frame);
+        game.render(frame);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        frame += 1;
     }
 
     glfwTerminate();
