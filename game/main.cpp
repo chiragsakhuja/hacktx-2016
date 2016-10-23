@@ -438,7 +438,10 @@ void *network_thread( void *ptr )
             int paddle_id =  atoi(obj_data["id"].asString().c_str());
             float paddle_x = atof(obj_data["px"].asString().c_str());
             float paddle_y = atof(obj_data["py"].asString().c_str());
-            game.paddle_pos[paddle_id].x = paddle_x;
+            if (paddle_id == 1)
+                game.paddle_pos[paddle_id].x = -paddle_x;
+            else
+                game.paddle_pos[paddle_id].x = paddle_x;
             game.paddle_pos[paddle_id].y = paddle_y * ASPECT;
         }
         else
