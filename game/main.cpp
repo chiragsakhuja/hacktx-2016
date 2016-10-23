@@ -38,7 +38,7 @@
 
 #define PADDLE_COUNT 2
 #define PADDLE1_Z -0.2f
-#define PADDLE2_Z -10.0f
+#define PADDLE2_Z -8.0f
 #define LEFT  -1.0f
 #define RIGHT 1.0f
 #define ASPECT ((float) HEIGHT / WIDTH)
@@ -127,11 +127,10 @@ int Game::initGL(void)
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    glLineWidth(0.5f);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.14f, 0.14f, 0.14f, 0.0f);
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glEnable(GL_BLEND);
 
     return 0;
 }
@@ -164,7 +163,7 @@ int Game::initShaders(void)
 int Game::initWorld(void)
 {
     paddle->createBox(glm::vec3(-0.5, -0.5, 0.05f), glm::vec3(0.5, 0.5f, -0.05f));
-    ball->createSphere(0.025f, 10.0f, 10.0f);
+    ball->createSphere(0.100f, 10.0f, 10.0f);
     left_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z));
     bottom_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z));
 
@@ -175,8 +174,8 @@ int Game::initLights(void)
 {
     directional_light->color = glm::vec3(1.0f);
     directional_light->ambient_intensity = 0.0f;
-    directional_light->diffuse_intensity = 0.0f;
-    directional_light->direction = glm::vec3(0.0f, 1.0f, -1.0f);
+    directional_light->diffuse_intensity = 1.0f;
+    directional_light->direction = glm::vec3(0.0f, 0.0f, -1.0f);
 
     point_light->color = glm::vec3(1.0f);
     point_light->ambient_intensity = 0.5f;
