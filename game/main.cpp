@@ -52,9 +52,12 @@ void safe_delete_array(T * x)
     if(x != nullptr) { delete[] x; }
 }
 
+// IDs
+int my_id = 0;
+
 class Game
 {
-private:
+public:
     Shader * main_shader;
     Mesh * paddle, * ball, * left_wall, * bottom_wall;
     DirectionalLight * directional_light;
@@ -190,16 +193,19 @@ int Game::initLights(void)
 
 int Game::input(int frame)
 {
-    for(int i = 0; i < PADDLE_COUNT; i += 1) {
-        paddle_pos[i] += glm::vec3(paddle_move[i].x, paddle_move[i].y, 0.0f);
+/*
+ *    for(int i = 0; i < PADDLE_COUNT; i += 1) {
+ *        paddle_pos[i] += glm::vec3(paddle_move[i].x, paddle_move[i].y, 0.0f);
+ *
+ *        if(frame % primes[i] == 0) {
+ *            float random1 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+ *            float random2 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+ *            paddle_move[i] = glm::normalize(glm::vec2(random1, random2)) / 50.0f;
+ *        }
+ *    }
+ */
 
-        if(frame % primes[i] == 0) {
-            float random1 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
-            float random2 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
-            paddle_move[i] = glm::normalize(glm::vec2(random1, random2)) / 50.0f;
-        }
-    }
-
+    //paddle_pos[i] += glm::vec3(paddle_move[i].x, paddle_move[i].y, 0.0f);
     if(ball_pos.z > PADDLE1_Z || ball_pos.z < PADDLE2_Z) {
         ball_direction = glm::vec3(ball_direction.x, ball_direction.y, -ball_direction.z);
     }
@@ -326,6 +332,7 @@ int main(void)
 
     // Request an ID
     Json::Value root;
+    Json::Reader reader;
     root["req"] = "connect";
     root["dev"] = "laptop";
     std::string document = Json::writeString(wbuilder, root);
@@ -335,7 +342,12 @@ int main(void)
     memset(buf,'\0', BUFLEN);
     int msg_len = net_client.recieve_message(buf, 100);
     buf[msg_len] = '\0';
-    puts(buf);
+
+    Json::Value id_data;
+    bool parsingSuccessful = reader.parse(buf, id_data);
+    my_id = atoi(id_data["id"].asString().c_str());
+
+    std::cout << "my id: " << my_id << std::endl;
 
     Sleep(5000);
 
@@ -367,21 +379,22 @@ int main(void)
     Game game;
     game.init();
 
-    Json::Reader reader;
-
     int frame = 0;
     game.sendOneTimeUniforms();
     while(! glfwWindowShouldClose(window)) {
 
         // Get new paddle location
-        //char msg[BUFLEN];
-        //int msg_len = net_client.recieve_message(msg, BUFLEN);
-        //msg[msg_len] = '\0';
+        char msg[BUFLEN];
+        int msg_len = net_client.recieve_message(msg, BUFLEN);
+        msg[msg_len] = '\0';
 
-        //Json::Value paddle_data;
-        //bool parsingSuccessful = reader.parse(msg, paddle_data);
-        //paddle_x = atof(paddle_data["px"].asString().c_str());
-        //paddle_y = atof(paddle_data["py"].asString().c_str());
+        Json::Value paddle_data;
+        bool parsingSuccessful = reader.parse(msg, paddle_data);
+        int paddle_id = atof(paddle_data["id"].asString().c_str());
+        float paddle_x = atof(paddle_data["px"].asString().c_str());
+        float paddle_y = atof(paddle_data["py"].asString().c_str());
+        game.paddle_pos[paddle_id].x = paddle_x;
+        game.paddle_pos[paddle_id].y = paddle_y;
 
         game.input(frame);
         game.render(frame);
