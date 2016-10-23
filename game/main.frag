@@ -1,6 +1,6 @@
 #version 410
 
-in vec3 vert_color;
+in vec4 vert_color;
 in vec3 vert_normal;
 in vec3 vert_world_pos;
 
@@ -42,7 +42,7 @@ vec4 calculateLightInternal(BaseLight light, vec3 light_direction, vec3 normal)
     vec4 ambient_color = vec4(light.color, 1.0) * light.ambient_intensity;
     float diffuse_factor = dot(normalize(normal), -light_direction);
 
-    vec4 diffuse_color = vec4(0, 0, 0, 0);
+    vec4 diffuse_color = vec4(0.0, 0.0, 0.0, 1.0);
 
     if(diffuse_factor > 0) {
         diffuse_color = vec4(light.color * light.diffuse_intensity * diffuse_factor, 1.0);
@@ -75,11 +75,11 @@ void main()
     vec4 total_light = calculateDirectionalLight(vert_normal);
     total_light += calculatePointLight(vert_normal);
 
-    vec4 color = vec4(clamp(vert_color, 0.0, 1.0), 1.0);
+    vec4 color = clamp(vert_color, 0.0, 1.0);
 
     if(disable_lighting) {
         FragColor = color;
     } else {
-        FragColor = total_light * color;
+        FragColor = vec4((total_light * color).xyz, color.w);
     }
 }

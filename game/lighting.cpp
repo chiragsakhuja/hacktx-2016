@@ -19,9 +19,3 @@ PointLight::PointLight()
     atten.linear = 0.0f;
     atten.exp = 0.0f;
 }
-
-//SpotLight::SpotLight()
-//{
-    //direction = glm::vec3(0.0f, 0.0f, 0.0f);
-    //cutoff = 0.0f;
-//}
