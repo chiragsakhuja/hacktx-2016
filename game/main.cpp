@@ -8,29 +8,18 @@
 #include "glm/vec3.hpp"
 #include "glm/mat4x4.hpp"
 
+#include "gl_types.h"
 #include "shader.h"
+#include "mesh.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
-
-void init(void);
-void createShape(void);
-void render(void);
-void compileShaders(char const *, char const *);
-void addShader(GLuint, std::string const &, GLenum);
-int readFile(char const *, std::string &);
-void close(int status);
-
-struct Vertex
-{
-    glm::vec3 position;
-    glm::vec3 color;
-};
 
 class Game
 {
 private:
     Shader * main_shader;
+    Mesh * paddle;
     GLuint vbo, ibo, vao;
     int initGL(void);
     int initShaders(void);
@@ -47,11 +36,13 @@ public:
 Game::Game()
 {
     main_shader = new Shader();
+    paddle = new Mesh();
 }
 
 Game::~Game(void)
 {
     if(main_shader) { delete main_shader; }
+    if(paddle) { delete paddle; }
 }
 
 int Game::init(void)
@@ -78,49 +69,19 @@ int Game::initGL(void)
 
 int Game::initShaders(void)
 {
+    paddle->bind();
     main_shader->addShader(GL_VERTEX_SHADER, "main.vert");
     main_shader->addShader(GL_FRAGMENT_SHADER, "main.frag");
     main_shader->compileShader();
     main_shader->addUniform("transform");
-    main_shader->enable();
+    main_shader->bind();
 
     return 0;
 }
 
 int Game::initWorld(void)
 {
-    Vertex vertices[8];
-    vertices[0] = Vertex{ glm::vec3(-0.5f, -0.5f, -2.0f), glm::vec3(1.0f, 1.0f, 0.0f) };
-    vertices[1] = Vertex{ glm::vec3( 0.5f, -0.5f, -2.0f), glm::vec3(1.0f, 0.0f, 0.0f) };
-    vertices[2] = Vertex{ glm::vec3( 0.5f,  0.5f, -2.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
-    vertices[3] = Vertex{ glm::vec3(-0.5f,  0.5f, -2.0f), glm::vec3(0.0f, 1.0f, 1.0f) };
-    vertices[4] = Vertex{ glm::vec3(-0.5f, -0.5f, -2.05f), glm::vec3(0.0f, 1.0f, 0.0f) };
-    vertices[5] = Vertex{ glm::vec3( 0.5f, -0.5f, -2.05f), glm::vec3(1.0f, 0.0f, 1.0f) };
-    vertices[6] = Vertex{ glm::vec3( 0.5f,  0.5f, -2.05f), glm::vec3(1.0f, 1.0f, 1.0f) };
-    vertices[7] = Vertex{ glm::vec3(-0.5f,  0.5f, -2.05f), glm::vec3(0.0f, 1.0f, 1.0f) };
-
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    GLuint indices[] = { 0, 1, 2,
-                         2, 3, 0,
-                         4, 5, 6,
-                         6, 7, 4,
-                         0, 4, 1,
-                         4, 1, 5,
-                         1, 5, 6,
-                         6, 2, 1,
-                         0, 4, 7,
-                         7, 3, 0,
-                         3, 2, 6,
-                         6, 7, 3 };
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    paddle->createPlane();
 
     return 0;
 }
@@ -129,13 +90,7 @@ int Game::render(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) sizeof(glm::vec3));
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    paddle->bind();
 
     glm::mat4 scale = glm::mat4(1.0f);
     glm::mat4 rotate = glm::rotate(scale, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -147,9 +102,6 @@ int Game::render(void)
     glUniformMatrix4fv(main_shader->uniforms["transform"], 1, GL_FALSE, &mvp[0][0]);
 
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
 
     return 0;
 }

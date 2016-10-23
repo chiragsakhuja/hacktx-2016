@@ -136,12 +136,7 @@ void Shader::setTransformFeedback(unsigned int count, GLchar const ** varyings)
     glTransformFeedbackVaryings(program, count, varyings, GL_INTERLEAVED_ATTRIBS);
 }
 
-void Shader::enable()
+void Shader::bind()
 {
     glUseProgram(program);
-}
-
-void Shader::disable()
-{
-    glUseProgram(0);
 }

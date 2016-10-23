@@ -26,8 +26,7 @@ class Shader
         void addUniform(std::string);
         void addUniformArray(std::string, unsigned int const *, unsigned int);
         void setTransformFeedback(unsigned int, GLchar const **);
-        void enable();
-        void disable();
+        void bind();
 };
 
 #endif
