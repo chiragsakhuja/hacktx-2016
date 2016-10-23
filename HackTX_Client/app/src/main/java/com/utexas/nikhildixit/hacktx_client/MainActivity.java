@@ -108,7 +108,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         public void run() {
 
             // First we need to poll the server to get our ID
-            /**/
+            JSONObject data = new JSONObject();
+            try {
+                data.put("req", "connect");
+                data.put("dev", "phone");
+
+            } catch (Exception e) {
+            }
+
+            // Send paddle info to server
+            try {
+                // Setup UDP
+                InetAddress serverAddr = InetAddress.getByName(SERVER_NAME);
+                DatagramSocket client_socket;
+
+                // Send paddle info
+                byte[] byte_data = data.toString().getBytes(StandardCharsets.US_ASCII);
+                DatagramPacket send_packet = new DatagramPacket(byte_data, data.toString().length(), serverAddr, SERVER_PORT);
+                client_socket = new DatagramSocket();
+                client_socket.send(send_packet);
+
+            } catch (Exception e) {
+                System.out.println(e.toString());
+            }
 
             try {
                 // Setup UDP
