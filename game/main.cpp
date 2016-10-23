@@ -21,85 +21,73 @@ void addShader(GLuint, std::string const &, GLenum);
 int readFile(char const *, std::string &);
 void close(int status);
 
-float x_trans, y_trans;
-
-int main(void)
-{
-    GLFWwindow * window;
-
-    x_trans = 0.0f;
-    y_trans = 0.0f;
-
-
-    if(! glfwInit()) {
-        std::cerr << "Could not init GLFW\n";
-        return 1;
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    window = glfwCreateWindow(WIDTH, HEIGHT, "3D Pong", NULL, NULL);
-    if(! window) {
-        glfwTerminate();
-        std::cerr << "Could not open window\n";
-        return 1;
-    }
-
-    glfwMakeContextCurrent(window);
-    if(gl3wInit()) {
-        std::cerr << "Could not initialize OpenGL\n";
-    }
-
-    init();
-
-    while(! glfwWindowShouldClose(window)) {
-        render();
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    close(0);
-    return 0;
-}
-
-void close(int status)
-{
-    glfwTerminate();
-    exit(status);
-}
-
 struct Vertex
 {
     glm::vec3 position;
     glm::vec3 color;
 };
 
-GLuint vbo;
-GLuint ibo;
-GLuint vao;
-Shader * main_shader;
-
-void init(void)
+class Game
 {
-    createShape();
+private:
+    Shader * main_shader;
+    GLuint vbo, ibo, vao;
+    int initGL(void);
+    int initShaders(void);
+    int initWorld(void);
+
+public:
+    Game(void);
+    ~Game(void);
+
+    int init(void);
+    int render(void);
+};
+
+Game::Game()
+{
     main_shader = new Shader();
+}
+
+Game::~Game(void)
+{
+    if(main_shader) { delete main_shader; }
+}
+
+int Game::init(void)
+{
+    int status = 0;
+    status = initGL();
+    if(status) { return status; }
+    status = initWorld();
+    if(status) { return status; }
+    status = initShaders();
+    if(status) { return status; }
+    return status;
+}
+
+int Game::initGL(void)
+{
+    glFrontFace(GL_CCW);
+    glEnable(GL_DEPTH_TEST);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    return 0;
+}
+
+int Game::initShaders(void)
+{
     main_shader->addShader(GL_VERTEX_SHADER, "main.vert");
     main_shader->addShader(GL_FRAGMENT_SHADER, "main.frag");
     main_shader->compileShader();
     main_shader->addUniform("transform");
     main_shader->enable();
 
-    glFrontFace(GL_CCW);
-    glEnable(GL_DEPTH_TEST);
-
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    return 0;
 }
 
-void createShape()
+int Game::initWorld(void)
 {
     Vertex vertices[8];
     vertices[0] = Vertex{ glm::vec3(-0.5f, -0.5f, -2.0f), glm::vec3(1.0f, 1.0f, 0.0f) };
@@ -133,9 +121,11 @@ void createShape()
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+
+    return 0;
 }
 
-void render(void)
+int Game::render(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -148,11 +138,11 @@ void render(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
     glm::mat4 scale = glm::mat4(1.0f);
-    glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(x_trans, y_trans, -5.0f));
+    glm::mat4 rotate = glm::rotate(scale, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 translate = glm::translate(rotate, glm::vec3(0.0f, 0.0f, -5.0f));
     glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
-    glm::mat4 mvp = perspective * view * translate * rotate * scale;
+    glm::mat4 mvp = perspective * view * rotate * translate;
 
     glUniformMatrix4fv(main_shader->uniforms["transform"], 1, GL_FALSE, &mvp[0][0]);
 
@@ -160,92 +150,46 @@ void render(void)
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
+
+    return 0;
 }
 
-void compileShaders(char const * vert_file, char const * frag_file)
+int main(void)
 {
-    GLuint shader_program = glCreateProgram();
+    GLFWwindow * window;
 
-    if(! shader_program) {
-        std::cerr << "Error creating shader program\n";
-        exit(1);
+    if(! glfwInit()) {
+        std::cerr << "Could not init GLFW\n";
+        return 1;
     }
 
-    std::string vs, fs;
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    if (! readFile(vert_file, vs)) {
-        exit(1);
-    };
-
-    if (! readFile(frag_file, fs)) {
-        exit(1);
-    };
-
-    addShader(shader_program, vs.c_str(), GL_VERTEX_SHADER);
-    addShader(shader_program, fs.c_str(), GL_FRAGMENT_SHADER);
-
-    GLint success = 0;
-    GLchar error_log[1024] = {0};
-
-    glLinkProgram(shader_program);
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    if(! success) {
-        glGetProgramInfoLog(shader_program, sizeof(error_log), NULL, error_log);
-        std::cerr << "Error linking shader program: " << error_log << "\n";
-        exit(1);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "3D Pong", NULL, NULL);
+    if(! window) {
+        glfwTerminate();
+        std::cerr << "Could not open window\n";
+        return 1;
     }
 
-    glValidateProgram(shader_program);
-    glGetProgramiv(shader_program, GL_VALIDATE_STATUS, &success);
-    if(! success) {
-        glGetProgramInfoLog(shader_program, sizeof(error_log), NULL, error_log);
-        std::cerr << "Error compiling shader type: " << error_log << "\n";
-        exit(1);
+    glfwMakeContextCurrent(window);
+    if(gl3wInit()) {
+        std::cerr << "Could not initialize OpenGL\n";
     }
 
-    glUseProgram(shader_program);
-}
+    Game game;
+    game.init();
 
-void addShader(GLuint shader_program, std::string const & shader_text, GLenum shader_type)
-{
-    GLuint shader_obj = glCreateShader(shader_type);
+    while(! glfwWindowShouldClose(window)) {
+        game.render();
 
-    if(! shader_obj) {
-        std::cerr << "Error creating shader type " << shader_type << "\n";
-        exit(1);
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
-    GLchar const * p[1];
-    p[0] = shader_text.c_str();
-    GLint lengths[1];
-    lengths[0] = shader_text.length();
-    glShaderSource(shader_obj, 1, p, lengths);
-    glCompileShader(shader_obj);
-
-    GLint success;
-    glGetShaderiv(shader_obj, GL_COMPILE_STATUS, &success);
-    if(! success) {
-        GLchar info_log[1024];
-        glGetShaderInfoLog(shader_obj, 1024, NULL, info_log);
-        std::cerr << "Error compiling shader type " << shader_type << ": " << info_log << "\n";
-        exit(1);
-    }
-
-    glAttachShader(shader_program, shader_obj);
-}
-
-int readFile(char const * file, std::string & data)
-{
-    if(std::ifstream is{file, std::ios::ate}) {
-        auto size = is.tellg();
-        std::string str(size, '\0');
-        is.seekg(0);
-        is.read(&str[0], size);
-        data = str;
-    } else {
-        std::cerr << "Could not open " << file << "\n";
-        return 0;
-    }
-
-    return 1;
+    glfwTerminate();
+    return 0;
 }

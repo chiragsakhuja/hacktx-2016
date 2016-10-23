@@ -2,9 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 #include "GL/gl3w.h"
-
-extern void close(int status);
 
 Shader::Shader()
 {
@@ -12,7 +11,7 @@ Shader::Shader()
 
     if(! program) {
         fprintf(stderr, "Error creating shader program\n");
-        close(1);
+        exit(1);
     }
 }
 
@@ -28,14 +27,14 @@ void Shader::addShader(GLenum shader_type, char const * file)
         shader_text = str;
     } else {
         std::cerr << "Could not open " << file << "\n";
-        close(1);
+        exit(1);
     }
 
     GLuint shader_obj = glCreateShader(shader_type);
 
     if(! shader_obj) {
         std::cerr << "Error creating shader type " << shader_type << "\n";
-        close(1);
+        exit(1);
     }
 
     GLchar const * p[1];
@@ -57,45 +56,6 @@ void Shader::addShader(GLenum shader_type, char const * file)
     glAttachShader(program, shader_obj);
 }
 
-    //return 1;
-
-    //if(! file) {
-        //fprintf(stderr, "Error loading %s\n", file_name);
-        //close(1);
-    //}
-
-    //GLuint shader = glCreateShader(type);
-
-    //if(! shader) {
-        //fprintf(stderr, "Error creating shader type %d\n", type);
-        //close(1);
-    //}
-
-    //fseek(file, 0, SEEK_END);
-    //GLint fileSize[1];
-    //fileSize[0] = ftell(file);
-    //rewind(file);
-    //char * source =(char *) calloc(sizeof(char), fileSize[0]);
-    //fread(source, 1, fileSize[0], file);
-    //GLchar const * data[1];
-    //data[0] = source;
-
-    //fclose(file);
-
-    //glShaderSource(shader, 1, data, fileSize);
-    //glCompileShader(shader);
-    //GLint status;
-    //glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    //if(! status) {
-        //GLchar log[1024];
-        //glGetShaderInfoLog(shader, 1024, NULL, log);
-        //fprintf(stderr, "Error compiling shader type %d: '%s'\n", type, log);
-        //close(1);
-    //}
-
-    //glAttachShader(program, shader);
-//}
-
 void Shader::compileShader()
 {
     GLint status = 0;
@@ -106,7 +66,7 @@ void Shader::compileShader()
     if(! status) {
         glGetProgramInfoLog(program, sizeof(log), NULL, log);
         fprintf(stderr, "Error linking shader program: '%s'\n", log);
-        close(1);
+        exit(1);
     }
 
     glValidateProgram(program);
@@ -114,7 +74,7 @@ void Shader::compileShader()
     if(! status) {
         glGetProgramInfoLog(program, sizeof(log), NULL, log);
         fprintf(stderr, "Invalid shader program: '%s'\n", log);
-        close(1);
+        exit(1);
     }
 }
 
