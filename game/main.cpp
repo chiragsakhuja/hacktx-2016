@@ -127,10 +127,10 @@ int Game::initGL(void)
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    glClearColor(0.14f, 0.14f, 0.14f, 0.0f);
+    glClearColor(0.14f, 0.14f, 0.14f, 1.0f);
 
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //glEnable(GL_BLEND);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     return 0;
 }
@@ -162,10 +162,10 @@ int Game::initShaders(void)
 
 int Game::initWorld(void)
 {
-    paddle->createBox(glm::vec3(-0.5, -0.5, 0.05f), glm::vec3(0.5, 0.5f, -0.05f));
+    paddle->createBox(glm::vec3(-0.5, -0.5, 0.05f), glm::vec3(0.5, 0.5f, -0.05f), true, glm::vec4(0.8f, 0.8f, 0.8f, 0.4f));
     ball->createSphere(0.100f, 10.0f, 10.0f);
-    left_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z));
-    bottom_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z));
+    left_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z), false, glm::vec4(0.0f));
+    bottom_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z), false, glm::vec4(0.0f));
 
     return 0;
 }
@@ -258,20 +258,6 @@ int Game::render(int frame)
     point_light->position = ball_pos;
     glUniform3f(main_shader->uniforms["point_light.position"], point_light->position.x, point_light->position.y, point_light->position.z);
 
-    paddle->bind();
-    for(int i = 0; i < PADDLE_COUNT; i += 1) {
-        translate = glm::translate(glm::mat4(1.0f), paddle_pos[i]);
-        world = translate * rotate * scale;
-        wvp = perspective * view * world;
-
-        glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
-        glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
-
-        // TODO: REMOVE
-        if(i >= 1)
-        paddle->draw(GL_TRIANGLES);
-    }
-
     left_wall->bind();
     translate = glm::mat4(1.0f);
     world = translate * rotate * scale;
@@ -311,6 +297,17 @@ int Game::render(int frame)
     glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
     ball->draw(GL_TRIANGLES);
 
+    paddle->bind();
+    for(int i = 0; i < PADDLE_COUNT; i += 1) {
+        translate = glm::translate(glm::mat4(1.0f), paddle_pos[i]);
+        world = translate * rotate * scale;
+        wvp = perspective * view * world;
+
+        glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+        glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+
+        paddle->draw(GL_TRIANGLES);
+    }
 
     return 0;
 }

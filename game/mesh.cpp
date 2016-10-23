@@ -53,7 +53,7 @@ int Mesh::createBuffers(Vertex * vertices, GLuint * indices)
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) sizeof(glm::vec3));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) (2 * sizeof(glm::vec3)));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) (2 * sizeof(glm::vec3)));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
@@ -69,17 +69,22 @@ int Mesh::createBuffers(Vertex * vertices, GLuint * indices)
     return 0;
 }
 
-int Mesh::createBox(glm::vec3 const & bfl, glm::vec3 const & trb)
+int Mesh::createBox(glm::vec3 const & bfl, glm::vec3 const & trb, bool single_color, glm::vec4 const & color)
 {
     Vertex vertices[8];
-    vertices[0] = Vertex{ glm::vec3(bfl.x, bfl.y, bfl.z), glm::vec3(1.0f, 1.0f, 0.0f) };
-    vertices[1] = Vertex{ glm::vec3(trb.x, bfl.y, bfl.z), glm::vec3(1.0f, 0.0f, 0.0f) };
-    vertices[2] = Vertex{ glm::vec3(trb.x, trb.y, bfl.z), glm::vec3(0.0f, 0.0f, 1.0f) };
-    vertices[3] = Vertex{ glm::vec3(bfl.x, trb.y, bfl.z), glm::vec3(0.0f, 1.0f, 1.0f) };
-    vertices[4] = Vertex{ glm::vec3(bfl.x, bfl.y, trb.z), glm::vec3(0.0f, 1.0f, 0.0f) };
-    vertices[5] = Vertex{ glm::vec3(trb.x, bfl.y, trb.z), glm::vec3(1.0f, 0.0f, 1.0f) };
-    vertices[6] = Vertex{ glm::vec3(trb.x, trb.y, trb.z), glm::vec3(1.0f, 1.0f, 1.0f) };
-    vertices[7] = Vertex{ glm::vec3(bfl.x, trb.y, trb.z), glm::vec3(0.0f, 1.0f, 1.0f) };
+    vertices[0] = Vertex{ glm::vec3(bfl.x, bfl.y, bfl.z), glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) };
+    vertices[1] = Vertex{ glm::vec3(trb.x, bfl.y, bfl.z), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) };
+    vertices[2] = Vertex{ glm::vec3(trb.x, trb.y, bfl.z), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f) };
+    vertices[3] = Vertex{ glm::vec3(bfl.x, trb.y, bfl.z), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f) };
+    vertices[4] = Vertex{ glm::vec3(bfl.x, bfl.y, trb.z), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) };
+    vertices[5] = Vertex{ glm::vec3(trb.x, bfl.y, trb.z), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f) };
+    vertices[6] = Vertex{ glm::vec3(trb.x, trb.y, trb.z), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) };
+    vertices[7] = Vertex{ glm::vec3(bfl.x, trb.y, trb.z), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f) };
+    if(single_color) {
+        for(int i = 0; i < 8; i += 1) {
+            vertices[i].color = color;
+        }
+    }
  
     GLuint indices[] = { 2, 1, 0,  
                          0, 3, 2,  
@@ -106,8 +111,8 @@ int Mesh::createBox(glm::vec3 const & bfl, glm::vec3 const & trb)
 int Mesh::createLine(glm::vec3 const & start, glm::vec3 const & end)
 {
     Vertex vertices[2];
-    vertices[0] = Vertex{ start, glm::vec3(1.0f) };
-    vertices[1] = Vertex{ end, glm::vec3(1.0f) };
+    vertices[0] = Vertex{ start, glm::vec4(1.0f) };
+    vertices[1] = Vertex{ end, glm::vec4(1.0f) };
 
     GLuint indices[] = { 0, 1 };
 
@@ -155,7 +160,7 @@ int Mesh::createSphere(float radius, float dT, float dP)
     }
 
     for(int i = 0; i < numVertices; i += 1) {
-        vertices[i].color = glm::vec3(1.0f);
+        vertices[i].color = glm::vec4(1.0f);
     }
 
     // Indexing time //
