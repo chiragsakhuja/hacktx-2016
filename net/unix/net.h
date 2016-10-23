@@ -7,6 +7,7 @@ struct game_t
 {
     enum status_enum {
         idle,
+        ready,
         play
     };
 
@@ -28,10 +29,18 @@ struct game_t
         bool joined[0];
         pos_t pos;
         vec_t vec;
+        uint64_t score = 0;
     };
 
     struct ball_t
     {
+        struct pos_t
+        {
+            float x = 0.0f;
+            float y = 0.0f;
+            float z = 0.0f;
+        };
+
         struct vec_t
         {
             float x = 0.0f;
@@ -45,14 +54,18 @@ struct game_t
             float y = 0.0f;
         };
 
+        pos_t pos;
         vec_t vec;
         acc_t acc;
     };
 
     uint8_t status = status_enum::idle;
     player_t player[2];
+    uint8_t start_player;
     ball_t ball;
 };
+
+game_t game;
 
 
 struct packet_t
@@ -86,12 +99,12 @@ public:
             throw std::runtime_error("cannot bind socket");
         }
 
-        t = std::thread{ &server_t::transcieve, this };
+        io_thread = std::thread{ &server_t::transcieve, this };
     } 
 
     ~server_t()
     {
-        t.join();
+        io_thread.join();
         close(socket_fd);
     }
 
@@ -109,8 +122,8 @@ public:
                 throw std::runtime_error("failed to recieve data");
             }
             msg[msg_size] = '\0';
-            cout << "> " << inet_ntoa(other_addr.sin_addr) << ":" << ntohs(other_addr.sin_port) << endl;
-            cout << msg << endl;
+            //cout << "> " << inet_ntoa(other_addr.sin_addr) << ":" << ntohs(other_addr.sin_port) << endl;
+            //cout << msg << endl;
             {
                 std::lock_guard<std::mutex> lock{ packet_queue_mutex };
                 packet_queue.push_back(
@@ -135,8 +148,24 @@ public:
         }
     }
 
+    void send_all(string data)
+    {
+        for (uint8_t i = 0, ii = rand() % 2; i < 2; i++, ii = !ii) {
+            for (uint8_t j = 0, jj = rand() % 2; j < 2; j++, jj = !jj) {
+                sockaddr_in addr = game.player[jj].addr[ii];
+                socklen_t addr_len = sizeof(addr);
+
+                int msg_size = sendto(socket_fd, data.c_str(), data.length(), 0, (struct sockaddr *) &addr, addr_len);
+                if (msg_size < 0) {
+                    cout << strerror(errno) << endl;
+                    throw std::runtime_error("failed to send data");
+                }
+            }
+        }
+    }
+
 private:
-    std::thread t;
+    std::thread io_thread;
     int socket_fd;
     sockaddr_in addr;
 };
