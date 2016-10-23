@@ -6,6 +6,7 @@
 #include <ctime>
 #include <cmath>
 #include <string>
+#include <random>
 
 #include "GL/gl3w.h"
 #include "GLFW/glfw3.h"
