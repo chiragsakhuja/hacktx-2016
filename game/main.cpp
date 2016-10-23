@@ -102,14 +102,14 @@ void init(void)
 void createShape()
 {
     Vertex vertices[8];
-    vertices[0] = Vertex{ glm::vec3(-0.5f, -0.5f, 2.0f), glm::vec3(1.0f, 1.0f, 0.0f) };
-    vertices[1] = Vertex{ glm::vec3( 0.5f, -0.5f, 2.0f), glm::vec3(1.0f, 0.0f, 0.0f) };
-    vertices[2] = Vertex{ glm::vec3( 0.5f,  0.5f, 2.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
-    vertices[3] = Vertex{ glm::vec3(-0.5f,  0.5f, 2.0f), glm::vec3(0.0f, 1.0f, 1.0f) };
-    vertices[4] = Vertex{ glm::vec3(-0.5f, -0.5f, 2.05f), glm::vec3(0.0f, 1.0f, 0.0f) };
-    vertices[5] = Vertex{ glm::vec3( 0.5f, -0.5f, 2.05f), glm::vec3(1.0f, 0.0f, 1.0f) };
-    vertices[6] = Vertex{ glm::vec3( 0.5f,  0.5f, 2.05f), glm::vec3(1.0f, 1.0f, 1.0f) };
-    vertices[7] = Vertex{ glm::vec3(-0.5f,  0.5f, 2.05f), glm::vec3(0.0f, 1.0f, 1.0f) };
+    vertices[0] = Vertex{ glm::vec3(-0.5f, -0.5f, -2.0f), glm::vec3(1.0f, 1.0f, 0.0f) };
+    vertices[1] = Vertex{ glm::vec3( 0.5f, -0.5f, -2.0f), glm::vec3(1.0f, 0.0f, 0.0f) };
+    vertices[2] = Vertex{ glm::vec3( 0.5f,  0.5f, -2.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
+    vertices[3] = Vertex{ glm::vec3(-0.5f,  0.5f, -2.0f), glm::vec3(0.0f, 1.0f, 1.0f) };
+    vertices[4] = Vertex{ glm::vec3(-0.5f, -0.5f, -2.05f), glm::vec3(0.0f, 1.0f, 0.0f) };
+    vertices[5] = Vertex{ glm::vec3( 0.5f, -0.5f, -2.05f), glm::vec3(1.0f, 0.0f, 1.0f) };
+    vertices[6] = Vertex{ glm::vec3( 0.5f,  0.5f, -2.05f), glm::vec3(1.0f, 1.0f, 1.0f) };
+    vertices[7] = Vertex{ glm::vec3(-0.5f,  0.5f, -2.05f), glm::vec3(0.0f, 1.0f, 1.0f) };
 
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -137,7 +137,6 @@ void createShape()
 
 void render(void)
 {
-    x_trans += 0.01f;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnableVertexAttribArray(0);
@@ -150,8 +149,8 @@ void render(void)
 
     glm::mat4 scale = glm::mat4(1.0f);
     glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(x_trans, y_trans, 5.0f));
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(x_trans, y_trans, -5.0f));
+    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
     glm::mat4 mvp = perspective * view * translate * rotate * scale;
 
