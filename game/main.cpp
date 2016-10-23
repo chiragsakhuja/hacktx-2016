@@ -11,6 +11,7 @@
 #include "gl_types.h"
 #include "shader.h"
 #include "mesh.h"
+#include "lighting.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -20,10 +21,12 @@ class Game
 private:
     Shader * main_shader;
     Mesh * paddle;
-    GLuint vbo, ibo, vao;
+    DirectionalLight * directional_light;
+
     int initGL(void);
     int initShaders(void);
     int initWorld(void);
+    int initLights(void);
 
     float angle;
 
@@ -39,6 +42,7 @@ Game::Game()
 {
     main_shader = new Shader();
     paddle = new Mesh();
+    directional_light = new DirectionalLight();
 
     angle = 0.0f;
 }
@@ -47,6 +51,7 @@ Game::~Game(void)
 {
     if(main_shader) { delete main_shader; }
     if(paddle) { delete paddle; }
+    if(directional_light) { delete directional_light; }
 }
 
 int Game::init(void)
@@ -57,6 +62,8 @@ int Game::init(void)
     status = initWorld();
     if(status) { return status; }
     status = initShaders();
+    if(status) { return status; }
+    status = initLights();
     if(status) { return status; }
     return status;
 }
@@ -78,6 +85,8 @@ int Game::initShaders(void)
     main_shader->addShader(GL_FRAGMENT_SHADER, "main.frag");
     main_shader->compileShader();
     main_shader->addUniform("transform");
+    main_shader->addUniform("directional_light.color");
+    main_shader->addUniform("directional_light.ambient_intensity");
     main_shader->bind();
 
     return 0;
@@ -85,7 +94,15 @@ int Game::initShaders(void)
 
 int Game::initWorld(void)
 {
-    paddle->createSphere(10.0f, 10.0f, 10.0f);
+    paddle->createSphere(1.0f, 10.0f, 10.0f);
+
+    return 0;
+}
+
+int Game::initLights(void)
+{
+    directional_light->color = glm::vec3(1.0f, 1.0f, 1.0f);
+    directional_light->ambient_intensity = 1.0f;
 
     return 0;
 }
@@ -100,11 +117,13 @@ int Game::render(void)
 
     glm::mat4 scale = glm::mat4(1.0f);
     glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -50.0f));
+    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
     glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
     glm::mat4 mvp = perspective * view * translate * rotate * scale;
 
+    glUniform1f(main_shader->uniforms["directional_light.ambient_intensity"], directional_light->ambient_intensity);
+    glUniform3f(main_shader->uniforms["directional_light.color"], directional_light->color.x, directional_light->color.y, directional_light->color.z);
     glUniformMatrix4fv(main_shader->uniforms["transform"], 1, GL_FALSE, &mvp[0][0]);
 
     glDrawElements(GL_TRIANGLES, paddle->numIndices, GL_UNSIGNED_INT, 0);

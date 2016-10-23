@@ -52,8 +52,6 @@ int Mesh::createPlane(void)
 
     numIndices = sizeof(indices);
 
-    std::cout << numIndices << std::endl;
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices, indices, GL_STATIC_DRAW);
 
@@ -84,9 +82,6 @@ int Mesh::createSphere(float radius, float dT, float dP)
     int numVertices = numHorPoints * (numVerPoints - 1) + 2;
     numIndices = (2 * 3 * numHorPoints) + (6 * numHorPoints * (numVerPoints - 2));
 
-    std::cout << numVertices << std::endl;
-    std::cout << numIndices << std::endl;
-
     // Allocate arrays //
     Vertex * vertices = new Vertex[numVertices];
     GLuint * indices = new GLuint[numIndices];
@@ -109,6 +104,7 @@ int Mesh::createSphere(float radius, float dT, float dP)
                                                    radius * sin(glm::radians(trackDP)),
                                                   (radius * cos(glm::radians(trackDP))) * sin(glm::radians(trackDT)));
             trackDT += dT;
+            count += 1;
         }
         trackDP -= dP;
     }
@@ -140,8 +136,6 @@ int Mesh::createSphere(float radius, float dT, float dP)
             indices[count++] = sphereIndex(i+1, j, numHorPoints);
             indices[count++] = sphereIndex(i+1, j+1, numHorPoints);
             indices[count++] = sphereIndex(i, j+1, numHorPoints);
-
-           // printf("%d  %d\n", i, j);
         }
     }
 
@@ -155,7 +149,7 @@ int Mesh::createSphere(float radius, float dT, float dP)
 
     // Send vertex and index data to VBO //
     glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    glBufferData(GL_ARRAY_BUFFER, numVertices, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
