@@ -1,7 +1,11 @@
+#define WIN32_LEAN_AND_MEAN
+#define _WIN32_WINNT  0x501
+
 #include <iostream>
 #include <fstream>
 #include <ctime>
 #include <cmath>
+#include <string>
 
 #include "GL/gl3w.h"
 #include "GLFW/glfw3.h"
@@ -14,6 +18,21 @@
 #include "mesh.h"
 #include "lighting.h"
 
+// Network
+#include "windows.h"
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "json/json.h"
+#include "client.h"
+
+// Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
+#pragma comment (lib, "Ws2_32.lib")
+#pragma comment (lib, "Mswsock.lib")
+#pragma comment (lib, "AdvApi32.lib")
+
+#define BUFLEN 512
 #define WIDTH 1280
 #define HEIGHT 720
 
@@ -166,7 +185,6 @@ int Game::initLights(void)
     point_light->atten.constant = 0.5f;
     point_light->atten.linear = 0.5f;
     point_light->atten.exp = 0.1f;
-
     return 0;
 }
 
@@ -300,6 +318,31 @@ int Game::render(int frame)
 
 int main(void)
 {
+    // Setup network
+    char buf[BUFLEN];
+    char message[BUFLEN];
+    Client net_client;
+    
+    // JSON setup
+    Json::StreamWriterBuilder wbuilder;
+    wbuilder["indentation"] = "\t";
+
+    // Request an ID
+    Json::Value root;
+    root["req"] = "connect";
+    root["dev"] = "laptop";
+    std::string document = Json::writeString(wbuilder, root);
+
+    sprintf(message, document.c_str());
+    net_client.send_message(message);
+    memset(buf,'\0', BUFLEN);
+    int msg_len = net_client.recieve_message(buf, 100);
+    buf[msg_len] = '\0';
+    puts(buf);
+
+    Sleep(5000);
+
+    // GLFW setup
     GLFWwindow * window;
 
     if(! glfwInit()) {
@@ -327,9 +370,22 @@ int main(void)
     Game game;
     game.init();
 
+    Json::Reader reader;
+
     int frame = 0;
     game.sendOneTimeUniforms();
     while(! glfwWindowShouldClose(window)) {
+
+        // Get new paddle location
+        char msg[BUFLEN];
+        int msg_len = net_client.recieve_message(msg, BUFLEN);
+        msg[msg_len] = '\0';
+
+        Json::Value paddle_data;
+        bool parsingSuccessful = reader.parse(msg, paddle_data);
+        //paddle_x = atof(paddle_data["px"].asString().c_str());
+        //paddle_y = atof(paddle_data["py"].asString().c_str());
+
         game.input(frame);
         game.render(frame);
 
