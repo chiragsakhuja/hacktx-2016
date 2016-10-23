@@ -44,7 +44,7 @@
 
 #define PADDLE_COUNT 2
 #define PADDLE1_Z -2.0f
-#define PADDLE2_Z -8.0f
+#define PADDLE2_Z -12.0f
 #define PADDLE_WIDTH 0.3f
 #define LEFT  -1.0f
 #define RIGHT 1.0f
@@ -267,7 +267,7 @@ int Game::render(int frame)
     glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f));
     
-    glm::mat4 view;
+    glm::mat4 view = glm::mat4(1.0f);
     if (my_id == 0)
         view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     else
@@ -395,6 +395,8 @@ int main(void)
         return 1;
     }
 
+    glfwSwapInterval(0);
+
     glfwMakeContextCurrent(window);
     if(gl3wInit()) {
         std::cerr << "Could not initialize OpenGL\n";
@@ -416,7 +418,6 @@ int main(void)
         frame += 1;
     }
 
-    pthread_join( thread1, NULL);
     glfwTerminate();
     return 0;
 }
@@ -449,7 +450,7 @@ void *network_thread( void *ptr )
         {
             game.ball_pos.x = atof(obj_data["px"].asString().c_str());
             game.ball_pos.y = atof(obj_data["py"].asString().c_str());
-            game.ball_pos.z = -atof(obj_data["pz"].asString().c_str());
+            game.ball_pos.z = (-atof(obj_data["pz"].asString().c_str())) - 2.0f;
         }
     }
 

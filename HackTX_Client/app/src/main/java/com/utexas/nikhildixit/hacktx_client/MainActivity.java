@@ -254,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     my_paddle_position[0] += last_accel_values[0][1] * 0.01;
                     my_paddle_position[1] += last_accel_values[0][0] * 0.01;
 */
-                    float limiter = 25.0f;
+                    float limiter = 35.0f;
                     float azimuth_deg = (float)Math.toDegrees(azimuth);
                     if (azimuth_deg < -limiter)
                         azimuth_deg = -limiter;
@@ -282,17 +282,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             System.out.println("Swapped X: " + (last_accel_values[0][0] - last_accel_values[1][0]));
 */
                     // Bounds
-                    if (my_paddle_position[0] < -1.0f)
-                        my_paddle_position[0] = -1.0f;
+                    if (my_paddle_position[0] < -1.0f + 0.3f)
+                        my_paddle_position[0] = -1.0f + 0.3f;
 
-                    if (my_paddle_position[0] > 1.0f)
-                        my_paddle_position[0] = 1.0f;
+                    if (my_paddle_position[0] > 1.0f - 0.3f)
+                        my_paddle_position[0] = 1.0f - 0.3f;
 
-                    if (my_paddle_position[1] < -1.0f)
-                        my_paddle_position[1] = -1.0f;
+                    if (my_paddle_position[1] < -1.0f + 0.3f)
+                        my_paddle_position[1] = -1.0f + 0.3f;
 
-                    if (my_paddle_position[1] > 1.0f)
-                        my_paddle_position[1] = 1.0f;
+                    if (my_paddle_position[1] > 1.0f - 0.3f)
+                        my_paddle_position[1] = 1.0f - 0.3f;
 
 
                     /*
