@@ -25,6 +25,8 @@ private:
     int initShaders(void);
     int initWorld(void);
 
+    float angle;
+
 public:
     Game(void);
     ~Game(void);
@@ -37,6 +39,8 @@ Game::Game()
 {
     main_shader = new Shader();
     paddle = new Mesh();
+
+    angle = 0.0f;
 }
 
 Game::~Game(void)
@@ -59,7 +63,7 @@ int Game::init(void)
 
 int Game::initGL(void)
 {
-    glFrontFace(GL_CCW);
+    glFrontFace(GL_CW);
     glEnable(GL_DEPTH_TEST);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -81,27 +85,29 @@ int Game::initShaders(void)
 
 int Game::initWorld(void)
 {
-    paddle->createPlane();
+    paddle->createSphere(10.0f, 10.0f, 10.0f);
 
     return 0;
 }
 
 int Game::render(void)
 {
+    angle += 0.1f;
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     paddle->bind();
 
     glm::mat4 scale = glm::mat4(1.0f);
-    glm::mat4 rotate = glm::rotate(scale, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 translate = glm::translate(rotate, glm::vec3(0.0f, 0.0f, -5.0f));
+    glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -50.0f));
     glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
-    glm::mat4 mvp = perspective * view * rotate * translate;
+    glm::mat4 mvp = perspective * view * translate * rotate * scale;
 
     glUniformMatrix4fv(main_shader->uniforms["transform"], 1, GL_FALSE, &mvp[0][0]);
 
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, paddle->numIndices, GL_UNSIGNED_INT, 0);
 
     return 0;
 }
