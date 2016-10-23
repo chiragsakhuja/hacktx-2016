@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-#include <cstdlib>
 
 #include "GL/gl3w.h"
 #include "GLFW/glfw3.h"
@@ -22,9 +21,15 @@ void addShader(GLuint, std::string const &, GLenum);
 int readFile(char const *, std::string &);
 void close(int status);
 
+float x_trans, y_trans;
+
 int main(void)
 {
     GLFWwindow * window;
+
+    x_trans = 0.0f;
+    y_trans = 0.0f;
+
 
     if(! glfwInit()) {
         std::cerr << "Could not init GLFW\n";
@@ -96,25 +101,32 @@ void init(void)
 
 void createShape()
 {
-    Vertex vertices[4];
-    vertices[0].position = glm::vec3(-1.0f, -1.0f, 0.0f);
-    vertices[1].position = glm::vec3(0.0f, -1.0f, 1.0f);
-    vertices[2].position = glm::vec3(1.0f, -1.0f, 0.0f);
-    vertices[3].position = glm::vec3(0.0f, 1.0f, 0.0f);
-    vertices[0].color = glm::vec3(1.0f, 1.0f, 0.0f);
-    vertices[1].color = glm::vec3(1.0f, 0.0f, 0.0f);
-    vertices[2].color = glm::vec3(0.0f, 1.0f, 0.0f);
-    vertices[3].color = glm::vec3(0.0f, 0.0f, 1.0f);
+    Vertex vertices[8];
+    vertices[0] = Vertex{ glm::vec3(-0.5f, -0.5f, 2.0f), glm::vec3(1.0f, 1.0f, 0.0f) };
+    vertices[1] = Vertex{ glm::vec3( 0.5f, -0.5f, 2.0f), glm::vec3(1.0f, 0.0f, 0.0f) };
+    vertices[2] = Vertex{ glm::vec3( 0.5f,  0.5f, 2.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
+    vertices[3] = Vertex{ glm::vec3(-0.5f,  0.5f, 2.0f), glm::vec3(0.0f, 1.0f, 1.0f) };
+    vertices[4] = Vertex{ glm::vec3(-0.5f, -0.5f, 2.05f), glm::vec3(0.0f, 1.0f, 0.0f) };
+    vertices[5] = Vertex{ glm::vec3( 0.5f, -0.5f, 2.05f), glm::vec3(1.0f, 0.0f, 1.0f) };
+    vertices[6] = Vertex{ glm::vec3( 0.5f,  0.5f, 2.05f), glm::vec3(1.0f, 1.0f, 1.0f) };
+    vertices[7] = Vertex{ glm::vec3(-0.5f,  0.5f, 2.05f), glm::vec3(0.0f, 1.0f, 1.0f) };
 
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    unsigned int indices[] = { 0, 3, 1,
-        1, 3, 2,
-        2, 3, 0,
-        0, 1, 2 };
-
+    GLuint indices[] = { 0, 1, 2,
+                         2, 3, 0,
+                         4, 5, 6,
+                         6, 7, 4,
+                         0, 4, 1,
+                         4, 1, 5,
+                         1, 5, 6,
+                         6, 2, 1,
+                         0, 4, 7,
+                         7, 3, 0,
+                         3, 2, 6,
+                         6, 7, 3 };
     glGenBuffers(1, &ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -123,12 +135,9 @@ void createShape()
     glBindVertexArray(vao);
 }
 
-float rot = 0.1f;
-
 void render(void)
 {
-    rot += 0.01f;
-
+    x_trans += 0.01f;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnableVertexAttribArray(0);
@@ -140,15 +149,15 @@ void render(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
     glm::mat4 scale = glm::mat4(1.0f);
-    glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), rot, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 5.0f));
+    glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(x_trans, y_trans, 5.0f));
     glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
     glm::mat4 mvp = perspective * view * translate * rotate * scale;
 
     glUniformMatrix4fv(main_shader->uniforms["transform"], 1, GL_FALSE, &mvp[0][0]);
 
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
