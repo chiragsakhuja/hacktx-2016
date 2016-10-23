@@ -18,20 +18,26 @@
 #define HEIGHT 720
 
 #define PADDLE_COUNT 2
-#define PADDLE1_Z -10.0f
-#define PADDLE2_Z -20.0f
+#define PADDLE1_Z -0.2f
+#define PADDLE2_Z -10.0f
+#define LEFT  -1.0f
+#define RIGHT 1.0f
+#define ASPECT ((float) HEIGHT / WIDTH)
+#define UP (RIGHT * ASPECT)
+#define DOWN (LEFT * ASPECT)
 
 class Game
 {
 private:
     Shader * main_shader;
-    Mesh * paddle, * ball, * line;
+    Mesh * paddle, * ball, * line_x, * line_y, * line_z;
     DirectionalLight * directional_light;
 
     int initGL(void);
     int initShaders(void);
     int initWorld(void);
     int initLights(void);
+    void drawLineBatch(Mesh * line, glm::vec3 const & offset, glm::vec3 const & direction, float increment, int count, glm::mat4 const & perspective, glm::mat4 const & view);
 
     glm::vec3 paddle_pos[PADDLE_COUNT] = {glm::vec3(0.0f, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, PADDLE2_Z)};
     glm::vec2 paddle_move[PADDLE_COUNT];
@@ -55,7 +61,9 @@ Game::Game()
     main_shader = new Shader();
     paddle = new Mesh();
     ball = new Mesh();
-    line = new Mesh();
+    line_x = new Mesh();
+    line_y = new Mesh();
+    line_z = new Mesh();
     directional_light = new DirectionalLight();
 
     ball_direction = -0.05f;
@@ -67,22 +75,21 @@ Game::Game()
 
 Game::~Game(void)
 {
-    if(main_shader) { delete main_shader; }
-    if(paddle) { delete paddle; }
-    if(directional_light) { delete directional_light; }
+    //DELETE_A(main_shader);
+    //safe_delete_array(main_shader);
+    //safe_delete_array(paddle);
+    //safe_delete_array(ball);
+    //safe_delete_array(line_z);
+    //safe_delete_array(directional_light);
 }
 
 int Game::init(void)
 {
     int status = 0;
     status = initGL();
-    if(status) { return status; }
     status = initWorld();
-    if(status) { return status; }
     status = initShaders();
-    if(status) { return status; }
     status = initLights();
-    if(status) { return status; }
     return status;
 }
 
@@ -92,7 +99,11 @@ int Game::initGL(void)
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glLineWidth(0.5f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
 
     return 0;
 }
@@ -118,7 +129,9 @@ int Game::initWorld(void)
 {
     paddle->createPlane();
     ball->createSphere(0.25f, 10.0f, 10.0f);
-    line->createPlane();
+    line_x->createLine(glm::vec3(LEFT, 0.0f, 0.0f), glm::vec3(RIGHT, 0.0f, 0.0f));
+    line_y->createLine(glm::vec3(0.0f, DOWN, 0.0f), glm::vec3(0.0f, UP, 0.0f));
+    line_z->createLine(glm::vec3(0.0f, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, PADDLE2_Z));
 
     return 0;
 }
@@ -152,6 +165,20 @@ int Game::input(int frame)
         ball_direction = 0.5f;
     }
     ball_pos.z += ball_direction;
+
+    return 0;
+}
+
+void Game::drawLineBatch(Mesh * line, glm::vec3 const & offset, glm::vec3 const & direction, float increment, int count, glm::mat4 const & perspective, glm::mat4 const & view)
+{
+    for(int i = 0; i <= count; i += 1) {
+        glm::mat4 translate = glm::translate(glm::mat4(1.0f), direction * (i * increment) + offset);
+        glm::mat4 world = translate;
+        glm::mat4 wvp = perspective * view * world;
+        glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
+        glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
+        line->draw(GL_LINE_STRIP);
+    }
 }
 
 int Game::render(int frame)
@@ -159,10 +186,9 @@ int Game::render(int frame)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     paddle->bind();
-
     glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 scale = glm::mat4(1.0f);
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 perspective = glm::perspective(glm::radians(30.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
 
     //directional_light->direction = glm::normalize(glm::vec3(cosf(angle), 0.0f, 0.0f));
@@ -179,7 +205,7 @@ int Game::render(int frame)
         glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
         glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
 
-        glDrawElements(GL_TRIANGLES, paddle->numIndices, GL_UNSIGNED_INT, 0);
+        ball->draw(GL_TRIANGLES);
     }
 
     ball->bind();
@@ -188,7 +214,23 @@ int Game::render(int frame)
     glm::mat4 wvp = perspective * view * world;
     glUniformMatrix4fv(main_shader->uniforms["world_trans"], 1, GL_FALSE, &world[0][0]);
     glUniformMatrix4fv(main_shader->uniforms["wvp_trans"], 1, GL_FALSE, &wvp[0][0]);
-    glDrawElements(GL_TRIANGLES, ball->numIndices, GL_UNSIGNED_INT, 0);
+    ball->draw(GL_TRIANGLES);
+
+    line_x->bind();
+    float inc = std::abs(PADDLE2_Z - PADDLE1_Z) / 10;
+    drawLineBatch(line_x, glm::vec3(0.0f, DOWN, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
+    drawLineBatch(line_x, glm::vec3(0.0f, UP, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
+
+    line_y->bind();
+    drawLineBatch(line_y, glm::vec3(LEFT, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
+    drawLineBatch(line_y, glm::vec3(RIGHT, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, -1.0f), inc, 10, perspective, view);
+
+    line_z->bind();
+    drawLineBatch(line_z , glm::vec3(LEFT  , DOWN , 0.0f) , glm::vec3(1.0f , 0.0f , 0.0f) , 0.2f , 10 , perspective , view);
+    drawLineBatch(line_z , glm::vec3(LEFT  , UP   , 0.0f) , glm::vec3(1.0f , 0.0f , 0.0f) , 0.2f , 10 , perspective , view);
+    drawLineBatch(line_z , glm::vec3(LEFT  , DOWN , 0.0f) , glm::vec3(0.0f , 1.0f , 0.0f) , 0.2f * ASPECT, 10 , perspective , view);
+    drawLineBatch(line_z , glm::vec3(RIGHT , DOWN , 0.0f) , glm::vec3(0.0f , 1.0f , 0.0f) , 0.2f * ASPECT, 10 , perspective , view);
+
 
     return 0;
 }

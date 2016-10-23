@@ -9,17 +9,20 @@ class Mesh
 private:
     GLuint handle;
 
-    int sphereIndex(int slice, int num, int numHorPoints);
-    void calculateNormals(Vertex * vertices, GLuint * indices);
-
-public:
     int numVertices;
     int numIndices;
 
+    int sphereIndex(int slice, int num, int numHorPoints);
+    void calculateNormals(Vertex * vertices, GLuint * indices);
+    int createBuffers(Vertex * vertices, GLuint * indices);
+
+public:
     Mesh(void);
 
     int createPlane(void);
+    int createLine(glm::vec3 const & start, glm::vec3 const & end);
     int createSphere(float, float, float);
+    void draw(GLenum type);
     void bind(void);
 };
 

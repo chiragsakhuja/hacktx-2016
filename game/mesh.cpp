@@ -41,13 +41,36 @@ void Mesh::calculateNormals(Vertex * vertices, GLuint * indices)
     }
 }
 
-int Mesh::createPlane(void)
+int Mesh::createBuffers(Vertex * vertices, GLuint * indices)
 {
-    glBindVertexArray(handle);
+    bind();
 
     GLuint buffers[2];
     glGenBuffers(2, &buffers[0]);
 
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+    glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) sizeof(glm::vec3));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) (2 * sizeof(glm::vec3)));
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), indices, GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+
+    return 0;
+}
+
+int Mesh::createPlane(void)
+{
     Vertex vertices[8];
     vertices[0] = Vertex{ glm::vec3(-0.5f, -0.5f,  0.05f), glm::vec3(1.0f, 1.0f, 0.0f) };
     vertices[1] = Vertex{ glm::vec3( 0.5f, -0.5f,  0.05f), glm::vec3(1.0f, 0.0f, 0.0f) };
@@ -57,16 +80,6 @@ int Mesh::createPlane(void)
     vertices[5] = Vertex{ glm::vec3( 0.5f, -0.5f, -0.05f), glm::vec3(1.0f, 0.0f, 1.0f) };
     vertices[6] = Vertex{ glm::vec3( 0.5f,  0.5f, -0.05f), glm::vec3(1.0f, 1.0f, 1.0f) };
     vertices[7] = Vertex{ glm::vec3(-0.5f,  0.5f, -0.05f), glm::vec3(0.0f, 1.0f, 1.0f) };
-
-    glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) sizeof(glm::vec3));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) (2 * sizeof(glm::vec3)));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
 
     GLuint indices[] = { 0, 1, 2,
                          2, 3, 0,
@@ -85,24 +98,29 @@ int Mesh::createPlane(void)
     numIndices = sizeof(indices) / sizeof(GLuint);
 
     calculateNormals(vertices, indices);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
+    createBuffers(vertices, indices);
 
     return 0;
 }
 
+int Mesh::createLine(glm::vec3 const & start, glm::vec3 const & end)
+{
+    Vertex vertices[2];
+    vertices[0] = Vertex{ start, glm::vec3(1.0f) };
+    vertices[1] = Vertex{ end, glm::vec3(1.0f) };
+
+    GLuint indices[] = { 0, 1 };
+
+    numVertices = sizeof(vertices) / sizeof(Vertex);
+    numIndices = sizeof(indices) / sizeof(GLuint);
+
+    createBuffers(vertices, indices);
+
+    return 0;
+}
 
 int Mesh::createSphere(float radius, float dT, float dP)
 {
-    glBindVertexArray(handle);
-
-    // Generate VBOs //
-    GLuint buffers[2];
-    glGenBuffers(2, &buffers[0]);
-
     // Calculate total vertices needed //
     int numHorPoints = ceil(360.0 / dT);
     int numVerPoints = ceil(180.0 / dP);
@@ -176,24 +194,7 @@ int Mesh::createSphere(float radius, float dT, float dP)
 
     calculateNormals(vertices, indices);
 
-    // Send vertex and index data to VBO //
-    glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) sizeof(glm::vec3));
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid const *) (2 * sizeof(glm::vec3)));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(2);
+    createBuffers(vertices, indices);
 
     delete[] vertices;
     delete[] indices;
@@ -204,4 +205,9 @@ int Mesh::createSphere(float radius, float dT, float dP)
 void Mesh::bind(void)
 {
     glBindVertexArray(handle);
+}
+
+void Mesh::draw(GLenum type)
+{
+    glDrawElements(type, numIndices, GL_UNSIGNED_INT, 0);
 }
