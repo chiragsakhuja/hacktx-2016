@@ -367,7 +367,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //                    System.out.println(e.toString());
       //              }
 
-                    SystemClock.sleep(32);
+                    SystemClock.sleep(16);
                 }
 
             } catch (Exception e1) {
