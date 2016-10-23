@@ -24,6 +24,7 @@
 #include <WS2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <random>
 #include "json/json.h"
 #include "client.h"
 
@@ -377,12 +378,12 @@ int main(void)
     while(! glfwWindowShouldClose(window)) {
 
         // Get new paddle location
-        char msg[BUFLEN];
-        int msg_len = net_client.recieve_message(msg, BUFLEN);
-        msg[msg_len] = '\0';
+        //char msg[BUFLEN];
+        //int msg_len = net_client.recieve_message(msg, BUFLEN);
+        //msg[msg_len] = '\0';
 
-        Json::Value paddle_data;
-        bool parsingSuccessful = reader.parse(msg, paddle_data);
+        //Json::Value paddle_data;
+        //bool parsingSuccessful = reader.parse(msg, paddle_data);
         //paddle_x = atof(paddle_data["px"].asString().c_str());
         //paddle_y = atof(paddle_data["py"].asString().c_str());
 
