@@ -84,13 +84,14 @@ int main(int argc, char** argv)
             } else if (req == "update") {
                 string px = in_data_tree.get<string>("px");
                 string py = in_data_tree.get<string>("py");
+                int id = std::atoi(in_data_tree.get<string>("id").c_str());
 
                 std::ostringstream out_data_str;
                 ptree out_data_tree;
                 out_data_tree.put("px", px);
                 out_data_tree.put("py", py);
                 write_json(out_data_str, out_data_tree);
-                server.send(game.player[0].addr[1], out_data_str.str());
+                server.send(game.player[id].addr[1], out_data_str.str());
             }
         }
 
