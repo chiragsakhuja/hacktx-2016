@@ -54,9 +54,11 @@ public:
     {
         game_t::ball_t& ball = game.ball;
         constexpr float delta = 1.0f/60;
+        constexpr float ball_radius = 0.1f;
         constexpr float paddle_size = 0.25f;
         constexpr float speed_up = 1.1f;
         constexpr float acc_factor = 0.1f;
+        constexpr float aspect_ratio = 720.0f / 1280;
         while (true) {
             std::this_thread::sleep_for(std::chrono::microseconds((uint64_t) (delta * 1000000)));
 
@@ -66,22 +68,22 @@ public:
             ball.vec.x += ball.acc.x * delta;
             ball.vec.y += ball.acc.y * delta;
 
-            if (ball.pos.x > 1.0f) {
+            if ((ball.pos.x + ball_radius) > 1.0f) {
                 ball.pos.x = 1.0f;
                 ball.vec.x *= -1;
-            } else if (ball.pos.x < -1.0f) {
+            } else if ((ball.pos.x - ball_radius) < -1.0f) {
                 ball.pos.x = -1.0f;
                 ball.vec.x *= -1;
             }
-            if (ball.pos.y > 1.0f) {
+            if ((ball.pos.y + ball_radius) > (1.0f * aspect_ratio)) {
                 ball.pos.y = 1.0f;
                 ball.vec.y *= -1;
-            } else if (ball.pos.y < -1.0f) {
+            } else if ((ball.pos.y - ball_radius) < (-1.0f * aspect_ratio)) {
                 ball.pos.y = -1.0f;
                 ball.vec.y *= -1;
             }
 
-            if (ball.pos.z < 0.0f) {
+            if ((ball.pos.z - ball_radius)< 0.0f) {
                 if (ball.pos.x > (game.player[0].pos.x - paddle_size / 2) &&
                     ball.pos.x < (game.player[0].pos.x + paddle_size / 2) &&
                     ball.pos.y > (game.player[0].pos.y - paddle_size / 2) &&
@@ -95,7 +97,7 @@ public:
                     game.ball.pos.z = game.start_player * 10;
                     game.ball.vec.z = (-2 * game.start_player);
                 }
-            } else if (ball.pos.z > 10.0f) {
+            } else if ((ball.pos.z + ball_radius) > 10.0f) {
                 if (ball.pos.x > (game.player[1].pos.x - paddle_size / 2) &&
                     ball.pos.x < (game.player[1].pos.x + paddle_size / 2) &&
                     ball.pos.y > (game.player[1].pos.y - paddle_size / 2) &&
