@@ -165,8 +165,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         data.put("req", "update");
                         data.put("dev", 0);
                         data.put("id", 0);
-                        data.put("pos", my_paddle_position);
-                        data.put("vel", my_paddle_velocity);
+                        data.put("px", my_paddle_position[0]);
+                        data.put("py", my_paddle_position[1]);
+                        data.put("vx", my_paddle_velocity[0]);
+                        data.put("vx", my_paddle_velocity[1]);
                     } catch (Exception e) {
                     }
 
