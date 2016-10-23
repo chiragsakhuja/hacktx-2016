@@ -7,6 +7,7 @@
 #include <cmath>
 #include <string>
 #include <random>
+#include <WinSock2.h>
 
 #define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
@@ -24,7 +25,7 @@
 
 // Network
 #include "windows.h"
-#include <WinSock2.h>
+
 #include <WS2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
