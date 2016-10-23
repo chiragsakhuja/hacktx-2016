@@ -26,6 +26,12 @@
 #define UP (RIGHT * ASPECT)
 #define DOWN (LEFT * ASPECT)
 
+template<typename T>
+void safe_delete_array(T * x)
+{
+    if(x != nullptr) { delete[] x; }
+}
+
 class Game
 {
 private:
@@ -75,12 +81,12 @@ Game::Game()
 
 Game::~Game(void)
 {
-    //DELETE_A(main_shader);
-    //safe_delete_array(main_shader);
-    //safe_delete_array(paddle);
-    //safe_delete_array(ball);
-    //safe_delete_array(line_z);
-    //safe_delete_array(directional_light);
+    safe_delete_array(main_shader);
+    safe_delete_array(main_shader);
+    safe_delete_array(paddle);
+    safe_delete_array(ball);
+    safe_delete_array(line_z);
+    safe_delete_array(directional_light);
 }
 
 int Game::init(void)

@@ -1,2 +1,19 @@
-all:
-	g++ -g -x c++ -std=c++11 lighting.cpp main.cpp mesh.cpp gl3w.c shader.cpp -I/Users/chirag/work/hacktx-2016/game/sw/include -L/Users/chirag/work/hacktx-2016/game/sw/lib -lglfw -framework Cocoa -framework OpenGL -framework IOKit -opong
+CC = g++
+CFLG = -std=c++14 -Wall
+INCS = -Isw/include
+LFLG = -Lsw/lib
+LIBS = -lglfw -framework Cocoa -framework OpenGL -framework IOKit
+SRCS = $(wildcard *.cpp)
+OBJS = $(SRCS:.cpp=.o)
+EXEC = pong
+
+.PHONY: all clean
+
+all: $(OBJS)
+	$(CC) $(OBJS) -o $(EXEC) $(LFLG) $(LIBS)
+
+%.o: %.cpp
+	$(CC) $(CFLG) $(INCS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(EXEC)
