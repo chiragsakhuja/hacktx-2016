@@ -47,7 +47,7 @@ public:
         write_json(out_data_str, out_data_tree);
         server.send_all(out_data_str.str());
 
-        physics_thread = std::thread(&ball_physics::update, this);
+        physics_thread = std::thread{ &ball_physics::update, this };
     }
 
     void update()
@@ -55,7 +55,7 @@ public:
         game_t::ball_t& ball = game.ball;
         constexpr float delta = 1.0f/60;
         constexpr float ball_radius = 0.1f;
-        constexpr float paddle_size = 0.25f;
+        constexpr float paddle_size = 0.6f;
         constexpr float speed_up = 1.1f;
         constexpr float acc_factor = 0.1f;
         constexpr float aspect_ratio = 720.0f / 1280;
@@ -153,17 +153,19 @@ int main(int argc, char** argv)
             read_json(in_data_str, in_data_tree);
 
             string req = in_data_tree.get<string>("req");
-            string dev = in_data_tree.get<string>("dev");
             if (game.status == game_t::status_enum::idle) {
+                string dev = in_data_tree.get<string>("dev");
                 if (req == "connect") {
                     if (dev == "phone") {
                         size_t id;
-                        if (!game.player[0].joined[0])
+                        if (!game.player[0].joined[0]) {
                             id = 0;
-                        else if (!game.player[1].joined[0])
+                        } else if (!game.player[1].joined[0]) {
                             id = 1;
-                        else
+                        } else {
                             throw std::runtime_error("too many phones");
+                        }
+                        game.player[id].joined[0] = true;
                         game.player[id].addr[0] = packet.addr;
                         //cout << "player 0 phone @ " << game.player[id].addr[0].ip << ":" << game.player[id].addr[0].port << endl;
 
@@ -174,12 +176,14 @@ int main(int argc, char** argv)
                         server.send(game.player[id].addr[0], out_data_str.str());
                     } else if (dev == "laptop") {
                         size_t id;
-                        if (!game.player[0].joined[1])
+                        if (!game.player[0].joined[1]) {
                             id = 0;
-                        else if (!game.player[1].joined[1])
+                        } else if (!game.player[1].joined[1]) {
                             id = 1;
-                        else
-                            throw std::runtime_error("too many laptops");
+                        } else {
+                            throw std::runtime_error("too many phones");
+                        }
+                        game.player[id].joined[1] = true;
                         game.player[id].addr[1] = packet.addr;
                         //cout << "player 0 laptop @ " << game.player[id].addr[1].ip << ":" << game.player[id].addr[1].port << endl;
 

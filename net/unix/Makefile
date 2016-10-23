@@ -1,5 +1,5 @@
 CC = g++
-CFLG = -std=c++14 -Wall -fmax-errors=1
+CFLG = -g -std=c++14 -Wall -fmax-errors=1
 INCS =
 LFLG =
 LIBS = -lpthread
