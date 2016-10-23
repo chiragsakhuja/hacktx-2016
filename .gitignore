@@ -3,5 +3,5 @@ server
 pong
 *.o
 *.exe
-sw/
 *.swp
+sw/
