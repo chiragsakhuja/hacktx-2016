@@ -8,6 +8,9 @@
 #include <string>
 #include <random>
 
+#define HAVE_STRUCT_TIMESPEC
+#include <pthread.h>
+
 #include "GL/gl3w.h"
 #include "GLFW/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -48,7 +51,7 @@
 #define UP (RIGHT * ASPECT)
 #define DOWN (LEFT * ASPECT)
 
-template<typename T>
+    template<typename T>
 void safe_delete_array(T * x)
 {
     if(x != nullptr) { delete[] x; }
@@ -59,51 +62,38 @@ int my_id = 0;
 
 class Game
 {
-public:
-    Shader * main_shader;
-    Mesh * paddle, * ball, * left_wall, * bottom_wall;
-    DirectionalLight * directional_light;
-    PointLight * point_light;
+    public:
+        Shader * main_shader;
+        Mesh * paddle, * ball, * left_wall, * bottom_wall;
+        DirectionalLight * directional_light;
+        PointLight * point_light;
 
-    int initGL(void);
-    int initShaders(void);
-    int initWorld(void);
-    int initLights(void);
-    void drawLineBatch(Mesh * line, glm::vec3 const & offset, glm::vec3 const & direction, float increment, int count, glm::mat4 const & perspective, glm::mat4 const & view);
+        int initGL(void);
+        int initShaders(void);
+        int initWorld(void);
+        int initLights(void);
+        void drawLineBatch(Mesh * line, glm::vec3 const & offset, glm::vec3 const & direction, float increment, int count, glm::mat4 const & perspective, glm::mat4 const & view);
 
-    glm::vec3 paddle_pos[PADDLE_COUNT] = {glm::vec3(0.0f, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, PADDLE2_Z)};
-    glm::vec2 paddle_move[PADDLE_COUNT];
-    glm::vec3 ball_pos = glm::vec3(0.0f, 0.0f, (PADDLE1_Z + PADDLE2_Z) / 2.0f);
-    glm::vec3 ball_direction;
-    int primes[PADDLE_COUNT] = {41, 43};
+        glm::vec3 paddle_pos[PADDLE_COUNT] = {glm::vec3(0.0f, 0.0f, PADDLE1_Z), glm::vec3(0.0f, 0.0f, PADDLE2_Z)};
+        glm::vec2 paddle_move[PADDLE_COUNT];
+        glm::vec3 ball_pos = glm::vec3(0.0f, 0.0f, (PADDLE1_Z + PADDLE2_Z) / 2.0f);
+        glm::vec3 ball_direction;
+        int primes[PADDLE_COUNT] = {41, 43};
 
-public:
-    Game(void);
-    ~Game(void);
+    public:
+        Game(void);
+        ~Game(void);
 
-    int init(void);
-    int sendOneTimeUniforms(void);
-    int render(int frame);
-    int input(int frame);
+        int init(void);
+        int sendOneTimeUniforms(void);
+        int render(int frame);
+        int input(int frame);
 };
 
 Game::Game()
 {
     std::srand(std::time(0));
 
-    main_shader = new Shader();
-    paddle = new Mesh();
-    ball = new Mesh();
-    left_wall = new Mesh();
-    bottom_wall = new Mesh();
-    directional_light = new DirectionalLight();
-    point_light = new PointLight();
-
-    ball_direction = glm::vec3(0.067f, -0.029f, -0.043f);
-
-    for(int i = 0; i < PADDLE_COUNT; i += 1) {
-        paddle_move[i]  = glm::vec2(0.0f);
-    }
 }
 
 Game::~Game(void)
@@ -119,6 +109,19 @@ Game::~Game(void)
 
 int Game::init(void)
 {
+    main_shader = new Shader();
+    paddle = new Mesh();
+    ball = new Mesh();
+    left_wall = new Mesh();
+    bottom_wall = new Mesh();
+    directional_light = new DirectionalLight();
+    point_light = new PointLight();
+
+    ball_direction = glm::vec3(0.067f, -0.029f, -0.043f);
+
+    for(int i = 0; i < PADDLE_COUNT; i += 1) {
+        paddle_move[i]  = glm::vec2(0.0f);
+    }
     int status = 0;
     status = initGL();
     status = initWorld();
@@ -195,29 +198,31 @@ int Game::initLights(void)
 
 int Game::input(int frame)
 {
-/*
- *    for(int i = 0; i < PADDLE_COUNT; i += 1) {
- *        paddle_pos[i] += glm::vec3(paddle_move[i].x, paddle_move[i].y, 0.0f);
- *
- *        if(frame % primes[i] == 0) {
- *            float random1 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
- *            float random2 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
- *            paddle_move[i] = glm::normalize(glm::vec2(random1, random2)) / 50.0f;
- *        }
- *    }
- */
+    /*
+     *    for(int i = 0; i < PADDLE_COUNT; i += 1) {
+     *        paddle_pos[i] += glm::vec3(paddle_move[i].x, paddle_move[i].y, 0.0f);
+     *
+     *        if(frame % primes[i] == 0) {
+     *            float random1 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+     *            float random2 = (((float) std::rand()) / RAND_MAX - 0.5f) * 2.0f;
+     *            paddle_move[i] = glm::normalize(glm::vec2(random1, random2)) / 50.0f;
+     *        }
+     *    }
+     */
 
     //paddle_pos[i] += glm::vec3(paddle_move[i].x, paddle_move[i].y, 0.0f);
-    if(ball_pos.z > PADDLE1_Z || ball_pos.z < PADDLE2_Z) {
-        ball_direction = glm::vec3(ball_direction.x, ball_direction.y, -ball_direction.z);
-    }
-    if(ball_pos.x < LEFT || ball_pos.x > RIGHT) {
-        ball_direction = glm::vec3(-ball_direction.x, ball_direction.y, ball_direction.z);
-    }
-    if(ball_pos.y < DOWN || ball_pos.y > UP) {
-        ball_direction = glm::vec3(ball_direction.x, -ball_direction.y, ball_direction.z);
-    }
-    ball_pos += ball_direction;
+    /*
+     *if(ball_pos.z > PADDLE1_Z || ball_pos.z < PADDLE2_Z) {
+     *    ball_direction = glm::vec3(ball_direction.x, ball_direction.y, -ball_direction.z);
+     *}
+     *if(ball_pos.x < LEFT || ball_pos.x > RIGHT) {
+     *    ball_direction = glm::vec3(-ball_direction.x, ball_direction.y, ball_direction.z);
+     *}
+     *if(ball_pos.y < DOWN || ball_pos.y > UP) {
+     *    ball_direction = glm::vec3(ball_direction.x, -ball_direction.y, ball_direction.z);
+     *}
+     *ball_pos += ball_direction;
+     */
 
     return 0;
 }
@@ -321,13 +326,16 @@ int Game::render(int frame)
     return 0;
 }
 
+Client net_client;
+void *network_thread( void *ptr );
+// Setup network
+char buf[BUFLEN];
+char message[BUFLEN];
+
+Game game;
 int main(void)
 {
-    // Setup network
-    char buf[BUFLEN];
-    char message[BUFLEN];
-    Client net_client;
-    
+
     // JSON setup
     Json::StreamWriterBuilder wbuilder;
     wbuilder["indentation"] = "\t";
@@ -350,6 +358,13 @@ int main(void)
     my_id = atoi(id_data["id"].asString().c_str());
 
     std::cout << "my id: " << my_id << std::endl;
+
+    pthread_t thread1, thread2;
+    char *message1 = "Thread 1";
+    char *message2 = "Thread 2";
+    int  iret1, iret2;
+
+    /* Create independent threads each of which will execute function */
 
     Sleep(5000);
 
@@ -378,25 +393,12 @@ int main(void)
         std::cerr << "Could not initialize OpenGL\n";
     }
 
-    Game game;
-    game.init();
 
     int frame = 0;
+    game.init();
     game.sendOneTimeUniforms();
+    iret1 = pthread_create( &thread1, NULL, network_thread, (void*) message1);
     while(! glfwWindowShouldClose(window)) {
-
-        // Get new paddle location
-        char msg[BUFLEN];
-        int msg_len = net_client.recieve_message(msg, BUFLEN);
-        msg[msg_len] = '\0';
-
-        Json::Value paddle_data;
-        bool parsingSuccessful = reader.parse(msg, paddle_data);
-        int paddle_id = atoi(paddle_data["id"].asString().c_str());
-        float paddle_x = atof(paddle_data["px"].asString().c_str());
-        float paddle_y = atof(paddle_data["py"].asString().c_str());
-        game.paddle_pos[paddle_id].x = paddle_x;
-        game.paddle_pos[paddle_id].y = paddle_y;
 
         game.input(frame);
         game.render(frame);
@@ -407,6 +409,40 @@ int main(void)
         frame += 1;
     }
 
+    pthread_join( thread1, NULL);
     glfwTerminate();
     return 0;
 }
+
+void *network_thread( void *ptr )
+{
+
+    while (1)
+    {
+        // Get new paddle location
+        Json::Reader reader;
+        char msg[BUFLEN];
+        int msg_len = net_client.recieve_message(msg, BUFLEN);
+        msg[msg_len] = '\0';
+
+        Json::Value obj_data;
+        bool parsingSuccessful = reader.parse(msg, obj_data);
+        if (obj_data["obj"].asString() == "paddle")
+        {
+            int paddle_id =  atoi(obj_data["id"].asString().c_str());
+            float paddle_x = atof(obj_data["px"].asString().c_str());
+            float paddle_y = atof(obj_data["py"].asString().c_str());
+            game.paddle_pos[paddle_id].x = paddle_x;
+            game.paddle_pos[paddle_id].y = paddle_y * ASPECT;
+        }
+        else
+        {
+            //game.ball_pos.x = atof(obj_data["px"].asString().c_str());
+            //game.ball_pos.y = atof(obj_data["py"].asString().c_str());
+            //game.ball_pos.z = -atof(obj_data["pz"].asString().c_str());
+        }
+    }
+
+
+}
+

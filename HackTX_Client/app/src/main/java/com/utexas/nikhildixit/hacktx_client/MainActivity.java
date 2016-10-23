@@ -177,11 +177,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 byte[] new_data = new byte[resp_packet.getLength()];
                 System.arraycopy(resp_packet.getData(), resp_packet.getOffset(), new_data, 0, resp_packet.getLength());
 
-                System.out.println(new String(new_data));
+                //System.out.println(new String(new_data));
                 JSONObject response_json = new JSONObject(new String(new_data));
                 my_id = response_json.getInt("id");
 
-                System.out.println("my id:" + my_id);
+                //System.out.println("my id:" + my_id);
 
             } catch (Exception e) {
                 System.out.println(e.toString());
@@ -367,7 +367,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     //                    System.out.println(e.toString());
       //              }
 
-                    SystemClock.sleep(16);
+                    SystemClock.sleep(32);
                 }
 
             } catch (Exception e1) {
