@@ -224,10 +224,10 @@ int main(int argc, char** argv)
                     string vy = in_data_tree.get<string>("vy");
                     int id = std::atoi(in_data_tree.get<string>("id").c_str());
 
-                    game.player[id].pos.x = std::atoi(px.c_str());
-                    game.player[id].pos.y = std::atoi(py.c_str());
-                    game.player[id].vec.x = std::atoi(vx.c_str());
-                    game.player[id].vec.y = std::atoi(vy.c_str());
+                    game.player[id].pos.x = std::atof(px.c_str());
+                    game.player[id].pos.y = std::atof(py.c_str());
+                    game.player[id].vec.x = std::atof(vx.c_str());
+                    game.player[id].vec.y = std::atof(vy.c_str());
 
                     std::ostringstream out_data_str;
                     ptree out_data_tree;
