@@ -41,11 +41,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     // Game
     private static final float FPS = 60.0f;
     private static final float TIMESTEP = 1.0f / FPS;
+    private static final int HISTORY_LENGTH = 4;
     private float[] last_accel_value;
-    private float[] my_paddle_position;
+    private float[][] my_paddle_position;
     private float[] my_paddle_velocity;
-    private float[] my_paddle_acceleration;
-
 
     private static final int SERVER_PORT = 1221;
     private static final String SERVER_NAME = "a-dev.me";
@@ -64,13 +63,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager.registerListener(this, mAccel, SensorManager.SENSOR_DELAY_NORMAL);
 
         // Setup game data
-        my_paddle_position = new float[2];
-        my_paddle_velocity = new float[3];
-        my_paddle_acceleration = new float[3];
+        my_paddle_position = new float[HISTORY_LENGTH][2]; // Keep previous HISTORY_LENGTH paddle positions
+        my_paddle_velocity = new float[2];
 
-        my_paddle_position[0] = my_paddle_position[1] = 0.5f;
-        my_paddle_velocity[0] = my_paddle_velocity[1] = my_paddle_velocity[2] = 0.0f;
-        my_paddle_acceleration[0] = my_paddle_acceleration[1] = my_paddle_acceleration[2] = 0.0f;
+        for (int i = 0; i < HISTORY_LENGTH; i++)
+            my_paddle_position[i][0] = my_paddle_position[i][1] = 0.5f;
+        my_paddle_velocity[0] = my_paddle_velocity[1] = 0.0f;
 
         // Start game thread
         new Thread(new ClientThread()).start();
@@ -105,44 +103,74 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     class ClientThread implements Runnable {
 
+        // Game loop
         @Override
         public void run() {
 
-            try {
+            // First we need to poll the server to get our ID
+            /**/
 
+            try {
                 // Setup UDP
                 InetAddress serverAddr = InetAddress.getByName(SERVER_NAME);
                 DatagramSocket client_socket;
 
+                // Main game loop
                 for (;;) {
 
-                    // Update paddle position
-                    my_paddle_position[0] += last_accel_value[1] * 0.03f;
-                    my_paddle_position[1] += last_accel_value[0] * 0.03f;
+                    long current_time = System.currentTimeMillis();
+
+                    // Update paddle positions
+                    for (int i = HISTORY_LENGTH - 1; i > 0; i--) {
+                        my_paddle_position[i][0] = my_paddle_position[i - 1][0];
+                        my_paddle_position[i][1] = my_paddle_position[i - 1][1];
+                    }
+
+                    my_paddle_position[0][0] += last_accel_value[1] * 0.03f;
+                    my_paddle_position[0][1] += last_accel_value[0] * 0.03f;
 
                     // Bounds
-                    if (my_paddle_position[0] < 0.0f)
-                        my_paddle_position[0] = 0.0f;
+                    if (my_paddle_position[0][0] < 0.0f)
+                        my_paddle_position[0][0] = 0.0f;
 
-                    if (my_paddle_position[0] > 1.0f)
-                        my_paddle_position[0] = 1.0f;
+                    if (my_paddle_position[0][0] > 1.0f)
+                        my_paddle_position[0][0] = 1.0f;
 
-                    if (my_paddle_position[1] < 0.0f)
-                        my_paddle_position[1] = 0.0f;
+                    if (my_paddle_position[0][1] < 0.0f)
+                        my_paddle_position[0][1] = 0.0f;
 
-                    if (my_paddle_position[1] > 1.0f)
-                        my_paddle_position[1] = 1.0f;
+                    if (my_paddle_position[0][1] > 1.0f)
+                        my_paddle_position[0][1] = 1.0f;
 
+                    // Generate velocity
+                    float[][] position_deltas = new float[HISTORY_LENGTH - 1][2];
+                    for (int i = 0; i < HISTORY_LENGTH - 1; i++) {
+                        position_deltas[i][0] = my_paddle_position[i][0] - my_paddle_position[i+1][0];
+                        position_deltas[i][1] = my_paddle_position[i][1] - my_paddle_position[i+1][1];
+                    }
+
+                    for (int i = 0; i < HISTORY_LENGTH - 1; i++) {
+                        my_paddle_velocity[0] += position_deltas[i][0];
+                        my_paddle_velocity[1] += position_deltas[i][1];
+                    }
+
+                    my_paddle_velocity[0] /= (float) HISTORY_LENGTH;
+                    my_paddle_velocity[1] /= (float) HISTORY_LENGTH;
+
+                    //System.out.println(my_paddle_velocity[0] + ", " + my_paddle_velocity[1]);
 
                     // Create JSON object
                     JSONObject data = new JSONObject();
                     try {
-                        data.put("paddle_id", 0);
-                        data.put("paddle_x", my_paddle_position[0]);
-                        data.put("paddle_y", my_paddle_position[1]);
+                        data.put("req", "update");
+                        data.put("dev", 0);
+                        data.put("id", 0);
+                        data.put("pos", my_paddle_position);
+                        data.put("vel", my_paddle_velocity);
                     } catch (Exception e) {
                     }
 
+                    // Send paddle info to server
                     try {
 
                         // Send paddle info
@@ -159,7 +187,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     } catch (Exception e) {
                         System.out.println(e.toString());
                     }
-                    SystemClock.sleep(1000000);
+
+                    SystemClock.sleep(10);
                 }
 
             } catch (UnknownHostException e1) {
