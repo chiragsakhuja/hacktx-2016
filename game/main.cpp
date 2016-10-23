@@ -170,8 +170,8 @@ int Game::initWorld(void)
 {
     paddle->createBox(glm::vec3(-PADDLE_WIDTH, -PADDLE_WIDTH * ASPECT, 0.025f), glm::vec3(PADDLE_WIDTH, PADDLE_WIDTH * ASPECT, -0.025f), true, glm::vec4(0.8f, 0.8f, 0.8f, 0.4f));
     ball->createSphere(0.100f, 10.0f, 10.0f);
-    left_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z), false, glm::vec4(0.0f));
-    bottom_wall->createBox(glm::vec3(LEFT, DOWN, PADDLE1_Z), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z), false, glm::vec4(0.0f));
+    left_wall->createBox(glm::vec3(LEFT, DOWN, 0.0f), glm::vec3(LEFT + 0.05f, UP, PADDLE2_Z), false, glm::vec4(0.0f));
+    bottom_wall->createBox(glm::vec3(LEFT, DOWN, 0.0f), glm::vec3(RIGHT, DOWN + 0.05f, PADDLE2_Z), false, glm::vec4(0.0f));
 
     return 0;
 }
