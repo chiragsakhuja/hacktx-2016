@@ -58,7 +58,7 @@ public:
         constexpr float ball_radius = 0.1f;
         constexpr float paddle_size = 0.6f;
         constexpr float speed_up = 1.1f;
-        constexpr float acc_factor = 0.01f;
+        constexpr float acc_factor = 5.0f;
         constexpr float aspect_ratio = 720.0f / 1280;
 
         while (true) {
@@ -67,8 +67,8 @@ public:
             ball.pos.x += ball.vec.x * delta;
             ball.pos.y += ball.vec.y * delta;
             ball.pos.z += ball.vec.z * delta;
-            //ball.vec.x += ball.acc.x * delta;
-            //ball.vec.y += ball.acc.y * delta;
+            ball.vec.x += ball.acc.x * delta;
+            ball.vec.y += ball.acc.y * delta;
 
             if ((ball.pos.x + ball_radius) > 1.0f) {
                 ball.pos.x = 1.0f - ball_radius;
@@ -77,11 +77,11 @@ public:
                 ball.pos.x = -1.0f + ball_radius;
                 ball.vec.x *= -1;
             }
-            if ((ball.pos.y + ball_radius) > 1.0f) {
-                ball.pos.y = 1.0f - ball_radius;
+            if ((ball.pos.y + ball_radius) > aspect_ratio) {
+                ball.pos.y = aspect_ratio - ball_radius;
                 ball.vec.y *= -1;
-            } else if ((ball.pos.y - ball_radius) < -1.0f) {
-                ball.pos.y = -1.0f + ball_radius;
+            } else if ((ball.pos.y - ball_radius) < -aspect_ratio) {
+                ball.pos.y = -aspect_ratio + ball_radius;
                 ball.vec.y *= -1;
             }
 
@@ -101,8 +101,8 @@ public:
                     game.ball.pos.x = 0.0f;
                     game.ball.pos.y = 0.0f;
                     game.ball.pos.z = 5.0f;
-                    game.ball.vec.x = 0.0f;
-                    game.ball.vec.y = 0.0f;
+                    ball.vec.x = ((rand() % 20) - 10) * 0.01f;
+                    ball.vec.y = ((rand() % 20) - 10) * 0.01f;
                     game.ball.vec.z = game.start_player ? 2.0f : -2.0f;
                 }
             } else if ((ball.pos.z + ball_radius) > 10.0f) {
@@ -123,8 +123,8 @@ public:
                     game.ball.pos.x = 0.0f;
                     game.ball.pos.y = 0.0f;
                     game.ball.pos.z = 5.0f;
-                    game.ball.vec.x = 0.0f;
-                    game.ball.vec.y = 0.0f;
+                    ball.vec.x = ((rand() % 20) - 10) * 0.01f;
+                    ball.vec.y = ((rand() % 20) - 10) * 0.01f;
                     game.ball.vec.z = game.start_player ? 2.0f : -2.0f;
                 }
             }
@@ -253,9 +253,9 @@ int main(int argc, char** argv)
                     string vy = in_data_tree.get<string>("vy");
                     int id = std::atoi(in_data_tree.get<string>("id").c_str());
 
-                    game.player[id].pos.x = std::atof(px.c_str());
+                    game.player[id].pos.x = id ? -std::atof(px.c_str()) : std::atof(px.c_str());
                     game.player[id].pos.y = std::atof(py.c_str());
-                    game.player[id].vec.x = std::atof(vx.c_str());
+                    game.player[id].vec.x = id ? -std::atof(vx.c_str()) : std::atof(vx.c_str());
                     game.player[id].vec.y = std::atof(vy.c_str());
 
                     std::ostringstream out_data_str;
